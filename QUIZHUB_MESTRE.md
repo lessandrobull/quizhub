@@ -139,3 +139,11 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
   * Atualiza o registro no Supabase para `is_verified = true`.
   * Oculta o botão `x` da linha e desativa a ação de `ok`.
   * **Imutabilidade Absoluta:** Sessões com `is_verified = true` ficam permanentemente travadas contra regravações ou sobrescritas por qualquer rotina autônoma do Apps Script.
+
+---
+
+## 8. RÉPLICA LOCAL DO BACKEND (Code.gs)
+
+* **Finalidade e Localização:** O arquivo `Code.gs` localizado na raiz do repositório é a réplica exata e espelho de referência do código que roda no Google Apps Script[cite: 4].
+* **Protocolo de Sincronização Obrigatória:** Toda e qualquer alteração de regras de negócio, prompts, tratamento de erros, endpoints ou schemas realizada no motor do Google Apps Script deve ser obrigatoriamente refletida no arquivo `Code.gs` local e versionada no Git.
+* **Visibilidade para IAs e Desenvolvedores:** Este arquivo serve como referência direta de consulta para garantir que modificações futuras no frontend ou no banco respeitem a lógica interna de processamento autônomo.
