@@ -18,6 +18,7 @@ interface Question {
 }
 
 interface QuizData {
+  studentId?: string;
   studentName: string;
   date: string;
   level: string;
@@ -60,6 +61,7 @@ export default function QuizView() {
           homework,
           class_sessions (
             class_date,
+            student_id,
             students (
               name
             )
@@ -71,6 +73,7 @@ export default function QuizView() {
       if (!error && quizRecord) {
         const sessionInfo = quizRecord.class_sessions as any;
         const parsedData: QuizData = {
+          studentId: sessionInfo?.student_id || '',
           studentName: sessionInfo?.students?.name || 'Student',
           date: sessionInfo?.class_date || '',
           level: quizRecord.level || 'B2 (Upper-Intermediate)',
@@ -332,8 +335,35 @@ export default function QuizView() {
           padding: 16,
           textAlign: 'center',
           marginBottom: 16,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          position: 'relative'
         }}>
+          {data.studentId && (
+            <Link
+              to={`/${data.studentId}`}
+              style={{
+                position: 'absolute',
+                left: 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: '#71c499',
+                color: '#27427f',
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                textDecoration: 'none',
+                letterSpacing: '0.04em',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              HUB
+            </Link>
+          )}
+
           <h1 style={{ fontSize: 19, fontWeight: 800, color: '#71c499', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
             Conversation Assessment
           </h1>
