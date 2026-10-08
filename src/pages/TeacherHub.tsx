@@ -248,25 +248,29 @@ export default function TeacherHub() {
               borderBottom: '4px solid #27427f'
             }}>
               <form onSubmit={handleProcessSingleClass} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <select
-                  value={selectedStudentName}
-                  onChange={(e) => setSelectedStudentName(e.target.value)}
-                  style={{
-                    flex: '1 1 200px',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    color: '#1e293b',
-                    backgroundColor: '#eaeffa',
-                    outline: 'none'
-                  }}
-                >
-                  {regularStudents.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
+                <input
+  list="registered-students-list"
+  type="text"
+  placeholder="Select or type student..."
+  value={selectedStudentName}
+  onChange={(e) => setSelectedStudentName(e.target.value)}
+  style={{
+    flex: '1 1 200px',
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: '1px solid #cbd5e1',
+    fontSize: '0.88rem',
+    fontWeight: 600,
+    color: '#1e293b',
+    backgroundColor: '#eaeffa',
+    outline: 'none'
+  }}
+/>
+<datalist id="registered-students-list">
+  {regularStudents.map(s => (
+    <option key={s.id} value={s.name} />
+  ))}
+</datalist>
 
                 <input
                   type="date"
