@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
+interface TeacherFocusArea {
+  studentSaid: string;
+  betterWay: string;
+  explanation: string;
+}
+
 interface BriefingData {
   studentName: string;
   studentId: string;
   date: string;
-  diagnosticFocus: string;
   activitiesDone: string[];
+  conversationAssessment: string;
+  focusAreas: TeacherFocusArea[];
   nextTasks: string;
-  didacticTip: string;
-  behavioralTip: string;
 }
 
 export default function BriefingView() {
@@ -18,7 +23,7 @@ export default function BriefingView() {
   const [data, setData] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Edit Mode State
+  // Estados de Edição Editorial
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<BriefingData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -32,11 +37,11 @@ export default function BriefingView() {
       const { data: record, error } = await supabase
         .from('teacher_briefings')
         .select(`
-          diagnostic_focus,
           activities_done,
           next_tasks,
-          teaching_tip_didactic,
-          teaching_tip_behavioral,
+          conversation_assessment,
+          focus_areas,
+          diagnostic_focus,
           class_sessions (
             id,
             class_date,
@@ -51,16 +56,36 @@ export default function BriefingView() {
 
       if (!error && record) {
         const sessionInfo = record.class_sessions as any;
+        const isTeacher = sessionInfo?.student_id === 'lessandro-bull';
+
+        let resolvedStudentName = sessionInfo?.students?.name || 'Student';
+
+        // Para sessões docentes, recupera o nome real do aluno avaliado
+        if (isTeacher) {
+          const { data: quizRecord } = await supabase
+            .from('student_quizzes')
+            .select('level')
+            .eq('session_id', sessionId)
+            .maybeSingle();
+
+          if (quizRecord?.level) {
+            const match = quizRecord.level.match(/\(([^)]+)\)/);
+            if (match && match[1]) {
+              resolvedStudentName = match[1];
+            }
+          }
+        }
+
         const parsed: BriefingData = {
-          studentName: sessionInfo?.students?.name || 'Student',
+          studentName: resolvedStudentName,
           studentId: sessionInfo?.student_id || '',
           date: sessionInfo?.class_date || '',
-          diagnosticFocus: record.diagnostic_focus || '',
           activitiesDone: (record.activities_done as string[]) || [],
-          nextTasks: record.next_tasks || '',
-          didacticTip: record.teaching_tip_didactic || '',
-          behavioralTip: record.teaching_tip_behavioral || ''
+          conversationAssessment: record.conversation_assessment || record.diagnostic_focus || '',
+          focusAreas: (record.focus_areas as TeacherFocusArea[]) || [],
+          nextTasks: record.next_tasks || ''
         };
+
         setData(parsed);
         setEditData(JSON.parse(JSON.stringify(parsed)));
       }
@@ -83,17 +108,16 @@ export default function BriefingView() {
   const handleSaveChanges = async () => {
     if (!editData || !sessionId) return;
     setSaving(true);
-    setStatusMsg({ text: 'Saving changes to Supabase...', color: '#27427f' });
+    setStatusMsg({ text: 'Saving changes...', color: '#27427f' });
 
     try {
       const { error } = await supabase
         .from('teacher_briefings')
         .update({
-          diagnostic_focus: editData.diagnosticFocus,
           activities_done: editData.activitiesDone,
-          next_tasks: editData.nextTasks,
-          teaching_tip_didactic: editData.didacticTip,
-          teaching_tip_behavioral: editData.behavioralTip
+          conversation_assessment: editData.conversationAssessment,
+          focus_areas: editData.focusAreas,
+          next_tasks: editData.nextTasks
         })
         .eq('session_id', sessionId);
 
@@ -110,6 +134,7 @@ export default function BriefingView() {
     }
   };
 
+  // Funções de manipulação de Activities
   const updateActivity = (index: number, value: string) => {
     if (!editData) return;
     const updated = [...editData.activitiesDone];
@@ -128,6 +153,28 @@ export default function BriefingView() {
     setEditData({ ...editData, activitiesDone: updated });
   };
 
+  // Funções de manipulação de Teacher Focus Areas
+  const updateFocusArea = (index: number, field: keyof TeacherFocusArea, value: string) => {
+    if (!editData) return;
+    const updated = [...editData.focusAreas];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditData({ ...editData, focusAreas: updated });
+  };
+
+  const addFocusArea = () => {
+    if (!editData) return;
+    setEditData({
+      ...editData,
+      focusAreas: [...editData.focusAreas, { studentSaid: '', betterWay: '', explanation: '' }]
+    });
+  };
+
+  const removeFocusArea = (index: number) => {
+    if (!editData) return;
+    const updated = editData.focusAreas.filter((_, i) => i !== index);
+    setEditData({ ...editData, focusAreas: updated });
+  };
+
   if (loading) {
     return (
       <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
@@ -144,34 +191,49 @@ export default function BriefingView() {
     );
   }
 
-  const isTeacherSelf = data.studentId === 'lessandro-bull';
-
   return (
-    <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '12px 14px 48px', color: '#1e293b' }}>
+    <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
-        {/* Editorial Bar */}
+        {/* 1. Main Banner */}
+        <div style={{
+          backgroundColor: '#27427f',
+          borderRadius: 18,
+          padding: '16px 20px',
+          textAlign: 'center',
+          marginBottom: 16,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+        }}>
+          <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            PEDAGOGICAL DASHBOARD • BRIEFING
+          </div>
+        </div>
+
+        {/* 2. Navigation & Editorial Card */}
         <div style={{
           backgroundColor: '#ffffff',
           borderRadius: 10,
-          padding: '10px 16px',
-          marginBottom: 14,
+          padding: '12px 18px',
+          marginBottom: 16,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          borderBottom: '4px solid #27427f',
           flexWrap: 'wrap',
-          gap: 10
+          gap: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          borderBottom: '4px solid #27427f'
         }}>
-          <div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase' }}>
-              Editorial Panel:
-            </span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginLeft: 6 }}>
-              {isEditing ? 'Editing Mode Active' : 'Report View'}
-            </span>
-          </div>
+          <Link
+            to={data.studentId ? (data.studentId === 'lessandro-bull' ? '/teacher/lessandro-bull' : `/teacher/${data.studentId}`) : '/teacher'}
+            style={{
+              color: '#27427f',
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: '0.88rem'
+            }}
+          >
+            ← Back to Student Sessions
+          </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {statusMsg && (
@@ -185,18 +247,18 @@ export default function BriefingView() {
                 type="button"
                 onClick={handleToggleEdit}
                 style={{
-                  backgroundColor: '#27427f',
-                  color: '#eaeffa',
-                  border: 'none',
-                  padding: '6px 14px',
+                  backgroundColor: '#ffffff',
+                  color: '#27427f',
+                  border: '1px solid #27427f',
+                  padding: '8px 16px',
                   borderRadius: 8,
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
                   cursor: 'pointer',
                   textTransform: 'uppercase'
                 }}
               >
-                Edit Content
+                EDIT CONTENT
               </button>
             ) : (
               <>
@@ -208,11 +270,12 @@ export default function BriefingView() {
                     backgroundColor: '#eaeffa',
                     color: '#27427f',
                     border: 'none',
-                    padding: '6px 12px',
+                    padding: '8px 16px',
                     borderRadius: 8,
-                    fontSize: '0.82rem',
+                    fontSize: '0.85rem',
                     fontWeight: 700,
-                    cursor: saving ? 'not-allowed' : 'pointer'
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase'
                   }}
                 >
                   Cancel
@@ -225,9 +288,9 @@ export default function BriefingView() {
                     backgroundColor: saving ? '#94a3b8' : '#71c499',
                     color: '#27427f',
                     border: 'none',
-                    padding: '6px 14px',
+                    padding: '8px 16px',
                     borderRadius: 8,
-                    fontSize: '0.82rem',
+                    fontSize: '0.85rem',
                     fontWeight: 800,
                     cursor: saving ? 'not-allowed' : 'pointer',
                     textTransform: 'uppercase'
@@ -240,26 +303,12 @@ export default function BriefingView() {
           </div>
         </div>
 
-        {/* Header Banner */}
-        <div style={{
-          backgroundColor: '#27427f',
-          borderRadius: 18,
-          padding: '16px 20px',
-          textAlign: 'center',
-          marginBottom: 12,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-        }}>
-          <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {isTeacherSelf ? 'TEACHER SELF-ASSESSMENT BRIEFING' : 'TEACHER BRIEFING'}
-          </div>
-        </div>
-
-        {/* Student & Navigation */}
+        {/* 3. Session Info Card */}
         <div style={{
           backgroundColor: '#27427f',
           borderRadius: 10,
           padding: '10px 16px',
-          marginBottom: 14,
+          marginBottom: 16,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -270,70 +319,35 @@ export default function BriefingView() {
           <span style={{ color: '#eaeffa', fontSize: '1.05rem', fontWeight: 700 }}>
             {data.studentName} &bull; {data.date}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div>
             <Link
-              to={`/quiz/${sessionId}`}
-              target="_blank"
+              to={`/teacher/quiz/${sessionId}`}
               style={{
-                backgroundColor: '#ffffff',
+                backgroundColor: '#71c499',
                 color: '#27427f',
-                padding: '6px 14px',
+                padding: '8px 16px',
                 borderRadius: 8,
                 fontSize: '0.82rem',
-                fontWeight: 700,
+                fontWeight: 800,
                 textDecoration: 'none',
                 textTransform: 'uppercase'
               }}
             >
-              Quiz
-            </Link>
-            <Link
-              to={`/teacher/dossier/${data.studentId}`}
-              target="_blank"
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#27427f',
-                padding: '6px 14px',
-                borderRadius: 8,
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                textDecoration: 'none',
-                textTransform: 'uppercase'
-              }}
-            >
-              Dossier
+              QUIZ
             </Link>
           </div>
         </div>
 
-        {/* 1. DIAGNOSTIC & CORE FOCUS */}
-        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          {isTeacherSelf ? 'DIAGNOSTIC & TARGET LEVEL CALIBRATION' : 'DIAGNOSTIC & PRIORITY FOCUS'}
-        </div>
-        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
-          {!isEditing ? (
-            data.diagnosticFocus || 'No diagnostic points registered.'
-          ) : (
-            <textarea
-              rows={3}
-              value={editData?.diagnosticFocus || ''}
-              onChange={(e) => setEditData(prev => prev ? { ...prev, diagnosticFocus: e.target.value } : null)}
-              placeholder="e.g., B2 level. Priority: dependent prepositions with motion verbs."
-              style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 14, lineHeight: 1.5, resize: 'vertical', outline: 'none' }}
-            />
-          )}
-        </div>
-
-        {/* 2. ACTIVITIES & CONCEPTS PRACTICED */}
+        {/* Section 1: Activities & Concepts Practiced */}
         <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           ACTIVITIES & CONCEPTS PRACTICED
         </div>
         <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
           {!isEditing ? (
             data.activitiesDone.length > 0 ? (
-              <ul style={{ paddingLeft: 20 }}>
+              <ul style={{ paddingLeft: 20, margin: 0 }}>
                 {data.activitiesDone.map((act, i) => (
-                  <li key={i} style={{ marginBottom: 8 }}>{act}</li>
+                  <li key={i} style={{ marginBottom: 6 }}>{act}</li>
                 ))}
               </ul>
             ) : (
@@ -348,7 +362,7 @@ export default function BriefingView() {
                     value={act}
                     onChange={(e) => updateActivity(i, e.target.value)}
                     placeholder={`Activity ${i + 1}`}
-                    style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13.5 }}
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.92rem', outline: 'none' }}
                   />
                   <button
                     type="button"
@@ -362,7 +376,7 @@ export default function BriefingView() {
               <button
                 type="button"
                 onClick={addActivity}
-                style={{ backgroundColor: '#eaeffa', color: '#27427f', border: 'none', padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}
+                style={{ backgroundColor: '#eaeffa', color: '#27427f', border: 'none', padding: '6px 14px', borderRadius: 6, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: 4 }}
               >
                 + Add Activity
               </button>
@@ -370,61 +384,120 @@ export default function BriefingView() {
           )}
         </div>
 
-        {/* 3. AGREED NEXT TASKS */}
+        {/* Section 2: Conversation Assessment (4 Sentences) */}
+        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          CONVERSATION ASSESSMENT
+        </div>
+        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+          {!isEditing ? (
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+              {data.conversationAssessment || 'No conversation assessment registered.'}
+            </div>
+          ) : (
+            <textarea
+              rows={6}
+              value={editData?.conversationAssessment || ''}
+              onChange={(e) => setEditData(prev => prev ? { ...prev, conversationAssessment: e.target.value } : null)}
+              placeholder="Sentence 1: Hi, Lessandro...&#10;Sentence 2: For a student at level...&#10;Sentence 3: Practical calibrating tips...&#10;Sentence 4: Behavioral & confidence tips..."
+              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+            />
+          )}
+        </div>
+
+        {/* Section 3: Teacher Focus Areas (5 Items) */}
+        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          TEACHER FOCUS AREAS
+        </div>
+        <div style={{ marginBottom: 18 }}>
+          {!isEditing ? (
+            data.focusAreas.length > 0 ? (
+              data.focusAreas.map((fa, i) => (
+                <div key={i} style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '14px 16px', marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <div style={{ color: '#b91c1c', fontWeight: 600, fontSize: '0.95rem', marginBottom: 4 }}>{fa.studentSaid}</div>
+                  <div style={{ color: '#0b5394', fontWeight: 700, fontSize: '1rem', marginBottom: 10 }}>{fa.betterWay}</div>
+                  <div style={{ backgroundColor: '#eaeffa', borderRadius: 8, padding: '10px 12px', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                    <strong style={{ color: '#27427f' }}>Explanation:</strong> {fa.explanation}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', color: '#64748b', fontSize: '0.95rem', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                No teacher focus areas registered.
+              </div>
+            )
+          ) : (
+            <div>
+              {(editData?.focusAreas || []).map((fa, i) => (
+                <div key={i} style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '14px 16px', marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#27427f' }}>
+                      FOCUS ITEM #{i + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFocusArea(i)}
+                      style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: 6, padding: '2px 8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Delete Item
+                    </button>
+                  </div>
+
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#b91c1c', marginBottom: 2 }}>TEACHER SAID (EXACT PHRASE):</label>
+                  <input
+                    type="text"
+                    value={fa.studentSaid}
+                    onChange={(e) => updateFocusArea(i, 'studentSaid', e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', marginBottom: 8, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0b5394', marginBottom: 2 }}>BETTER WAY (CALIBRATED PHRASE):</label>
+                  <input
+                    type="text"
+                    value={fa.betterWay}
+                    onChange={(e) => updateFocusArea(i, 'betterWay', e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', marginBottom: 8, fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#27427f', marginBottom: 2 }}>CONCISE EXPLANATION:</label>
+                  <textarea
+                    rows={2}
+                    value={fa.explanation}
+                    onChange={(e) => updateFocusArea(i, 'explanation', e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.9rem', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addFocusArea}
+                style={{ backgroundColor: '#ffffff', color: '#27427f', border: '1px solid #27427f', padding: '8px 16px', borderRadius: 8, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                + Add Focus Item
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Section 4: Agreed Next Tasks */}
         <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           AGREED NEXT TASKS & COMMITMENTS
         </div>
         <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
           {!isEditing ? (
-            data.nextTasks || 'No specific next tasks scheduled.'
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+              {data.nextTasks || 'No specific next tasks scheduled.'}
+            </div>
           ) : (
             <textarea
-              rows={2}
+              rows={3}
               value={editData?.nextTasks || ''}
               onChange={(e) => setEditData(prev => prev ? { ...prev, nextTasks: e.target.value } : null)}
               placeholder="Agreed tasks or commitments for the next class"
-              style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 14, lineHeight: 1.5, resize: 'vertical', outline: 'none' }}
+              style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.5, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
             />
           )}
         </div>
 
-        {/* 4. PEDAGOGICAL CONDUCT & TIPS */}
-        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          {isTeacherSelf ? 'PEDAGOGICAL CONDUCT & STUDENT LEVEL ADAPTATION' : 'PEDAGOGICAL CONDUCT & STUDENT HANDLING'}
-        </div>
-        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
-          <div style={{ backgroundColor: '#eaeffa', borderRadius: 8, padding: '14px 18px', marginBottom: 12 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#27427f', marginBottom: 4 }}>
-              Didactic Strategy
-            </div>
-            {!isEditing ? (
-              <div>{data.didacticTip || 'Maintain natural communicative flow.'}</div>
-            ) : (
-              <textarea
-                rows={2}
-                value={editData?.didacticTip || ''}
-                onChange={(e) => setEditData(prev => prev ? { ...prev, didacticTip: e.target.value } : null)}
-                style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13.5, resize: 'vertical', outline: 'none' }}
-              />
-            )}
-          </div>
-
-          <div style={{ backgroundColor: '#eaeffa', borderRadius: 8, padding: '14px 18px' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#27427f', marginBottom: 4 }}>
-              Behavioral & Confidence Handling
-            </div>
-            {!isEditing ? (
-              <div>{data.behavioralTip || 'Reinforce positive structural feedback.'}</div>
-            ) : (
-              <textarea
-                rows={2}
-                value={editData?.behavioralTip || ''}
-                onChange={(e) => setEditData(prev => prev ? { ...prev, behavioralTip: e.target.value } : null)}
-                style={{ width: '100%', padding: '8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13.5, resize: 'vertical', outline: 'none' }}
-              />
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

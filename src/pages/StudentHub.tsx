@@ -135,7 +135,7 @@ export default function StudentHub() {
                                     fontWeight: 700,
                                     textTransform: 'uppercase'
                                 }}>
-                                    Abrir
+                                    Open
                                 </span>
                             </Link>
                         ))

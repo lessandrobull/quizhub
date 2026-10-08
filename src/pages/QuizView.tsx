@@ -24,6 +24,7 @@ interface QuizData {
   levelDescription: string;
   focusAreas: FocusArea[];
   quiz: Question[];
+  homework?: string;
 }
 
 export default function QuizView() {
@@ -56,6 +57,7 @@ export default function QuizView() {
           level_description,
           focus_areas,
           questions,
+          homework,
           class_sessions (
             class_date,
             students (
@@ -74,7 +76,8 @@ export default function QuizView() {
           level: quizRecord.level || 'B2 (Upper-Intermediate)',
           levelDescription: quizRecord.level_description || '',
           focusAreas: (quizRecord.focus_areas as FocusArea[]) || [],
-          quiz: (quizRecord.questions as Question[]) || []
+          quiz: (quizRecord.questions as Question[]) || [],
+          homework: quizRecord.homework || ''
         };
         setData(parsedData);
         setEditData(JSON.parse(JSON.stringify(parsedData)));
@@ -118,7 +121,8 @@ export default function QuizView() {
           level: editData.level,
           level_description: editData.levelDescription,
           focus_areas: editData.focusAreas,
-          questions: editData.quiz
+          questions: editData.quiz,
+          homework: editData.homework || null
         })
         .eq('session_id', sessionId);
 
@@ -195,6 +199,7 @@ export default function QuizView() {
   const focusTitle = isPt ? 'Área de Foco' : 'Focus Areas';
   const quizTitle = isPt ? 'Praticar o Quiz' : 'Practice Quiz';
   const expLabel = isPt ? 'Explicação:' : 'Explanation:';
+  const homeworkTitle = isPt ? 'Lição de Casa' : 'Homework';
 
   const totalQuestions = data.quiz.length;
   const answeredCount = Object.keys(userAnswers).length;
@@ -522,7 +527,7 @@ export default function QuizView() {
             ) : (
               editData?.quiz.map((item, q) => (
                 <div key={q} style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: 16, marginBottom: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', borderBottom: '1px solid #cbd5e1', paddingBottom: 8, justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span style={{ fontWeight: 800, fontSize: 13, color: '#27427f' }}>
                       QUESTION #{item.number}
                     </span>
@@ -577,6 +582,49 @@ export default function QuizView() {
             )}
           </div>
         )}
+
+        {/* 4. Homework Section */}
+        <div style={{ marginBottom: 18, marginTop: 24 }}>
+          <div style={{ backgroundColor: '#27427f', color: '#eaeffa', fontWeight: 700, fontSize: 13, textAlign: 'center', padding: '8px 14px', borderRadius: 10, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+            {homeworkTitle}
+          </div>
+
+          <div style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 14.5, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {!isEditing ? (
+              data.homework && data.homework.trim().length > 0 ? (
+                <div>{data.homework}</div>
+              ) : (
+                <div style={{ color: '#64748b', fontStyle: 'italic' }}>
+                  {isPt ? 'Nenhuma lição de casa registrada.' : 'No homework assigned.'}
+                </div>
+              )
+            ) : (
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#27427f', marginBottom: 6, textTransform: 'uppercase' }}>
+                  {homeworkTitle}:
+                </label>
+                <textarea
+                  rows={4}
+                  value={editData?.homework || ''}
+                  onChange={(e) => setEditData(prev => prev ? { ...prev, homework: e.target.value } : null)}
+                  placeholder={isPt ? "• Exemplo de lição..." : "• Homework item..."}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    resize: 'vertical',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/teacher" replace />} />
         <Route path="/:studentId" element={<StudentHub />} />
         <Route path="/quiz/:sessionId" element={<QuizView />} />
+        <Route path="/teacher/quiz/:sessionId" element={<QuizView />} />
         <Route path="/teacher" element={<TeacherHub />} />
         <Route path="/teacher/:studentId" element={<TeacherHub />} />
         <Route path="/teacher/briefing/:sessionId" element={<BriefingView />} />

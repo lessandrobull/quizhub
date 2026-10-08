@@ -54,7 +54,7 @@ export default function TeacherHub() {
           const found = studentsList?.find(s => s.id === studentId);
           setCurrentStudent(found || null);
 
-          const { data: sessionList } = await supabase
+          let query = supabase
             .from('class_sessions')
             .select(`
               id,
@@ -62,10 +62,16 @@ export default function TeacherHub() {
               class_time,
               is_verified,
               created_at,
+              students(name),
               student_quizzes(level),
               teacher_briefings!inner(id)
-            `)
-            .eq('student_id', studentId)
+            `);
+
+          if (studentId !== 'lessandro-bull') {
+            query = query.eq('student_id', studentId);
+          }
+
+          const { data: sessionList } = await query
             .order('created_at', { ascending: false });
 
           if (sessionList) {
@@ -90,7 +96,7 @@ export default function TeacherHub() {
       await supabase.from('student_quizzes').delete().eq('session_id', sessionId);
       await supabase.from('teacher_briefings').delete().eq('session_id', sessionId);
       const { error } = await supabase.from('class_sessions').delete().eq('id', sessionId);
-      
+
       if (error) throw error;
 
       setSessions(prev => prev.filter(s => s.id !== sessionId));
@@ -165,7 +171,7 @@ export default function TeacherHub() {
       color: '#1e293b'
     }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
-        
+
         {/* Main Banner */}
         <div style={{
           backgroundColor: '#27427f',
@@ -176,11 +182,13 @@ export default function TeacherHub() {
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}>
           <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            PEDAGOGICAL DASHBOARD • QUIZHUB
+            {!studentId
+              ? 'PEDAGOGICAL DASHBOARD • QUIZHUB'
+              : (isTeacherView ? 'PEDAGOGICAL DASHBOARD • ALL SESSIONS' : 'PEDAGOGICAL DASHBOARD • STUDENT SESSIONS')}
           </div>
-          {currentStudent && (
+          {currentStudent && !isTeacherView && (
             <div style={{ color: '#eaeffa', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>
-              {isTeacherView ? 'Teacher Self-Assessment: Lessandro Büll' : `Student: ${currentStudent.name}`}
+              Student: {currentStudent.name}
             </div>
           )}
         </div>
@@ -195,39 +203,23 @@ export default function TeacherHub() {
               padding: '16px 20px',
               marginBottom: 16,
               boxShadow: '0 4px 12px rgba(39, 66, 127, 0.15)',
-              borderBottom: '4px solid #71c499',
+              borderBottom: '4px solid #27427f',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: 12
             }}>
-              <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, transform: 'translateY(1px)' }}>
                   TEACHER AREA
-                </div>
-                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
-                  Pedagogical Self-Assessment (Lessandro Büll)
-                </div>
+                </span>
+                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>
+                  Pedagogical Self-Assessment
+                </span>
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Link
-                  to="/teacher/dossier/lessandro-bull"
-                  target="_blank"
-                  style={{
-                    backgroundColor: '#eaeffa',
-                    color: '#27427f',
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  MY DOSSIER
-                </Link>
+              <div>
                 <Link
                   to="/teacher/lessandro-bull"
                   style={{
@@ -241,7 +233,7 @@ export default function TeacherHub() {
                     textTransform: 'uppercase'
                   }}
                 >
-                  VIEW MY SESSIONS &rarr;
+                  ALL SESSIONS
                 </Link>
               </div>
             </div>
@@ -255,10 +247,6 @@ export default function TeacherHub() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               borderBottom: '4px solid #27427f'
             }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-                TARGETED RECORDING INGESTION (1 CLASS = 1 REQUEST)
-              </div>
-
               <form onSubmit={handleProcessSingleClass} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 <select
                   value={selectedStudentName}
@@ -301,7 +289,7 @@ export default function TeacherHub() {
                   type="submit"
                   disabled={triggering || !selectedStudentName || !selectedDate}
                   style={{
-                    backgroundColor: (triggering || !selectedStudentName || !selectedDate) ? '#94a3b8' : '#27427f',
+                    backgroundColor: '#27427f',
                     color: '#ffffff',
                     border: 'none',
                     padding: '9px 18px',
@@ -337,7 +325,7 @@ export default function TeacherHub() {
               letterSpacing: '0.06em',
               textTransform: 'uppercase'
             }}>
-              SELECT A STUDENT
+              STUDENTS
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -366,7 +354,7 @@ export default function TeacherHub() {
                     }}
                   >
                     <span>{student.name}</span>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>View Classes &rarr;</span>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>View Classes</span>
                   </Link>
                 ))
               )}
@@ -405,7 +393,6 @@ export default function TeacherHub() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <Link
                   to={`/teacher/dossier/${studentId}`}
-                  target="_blank"
                   style={{
                     backgroundColor: '#27427f',
                     color: '#eaeffa',
@@ -417,24 +404,26 @@ export default function TeacherHub() {
                     textTransform: 'uppercase'
                   }}
                 >
-                  {isTeacherView ? 'MY DOSSIER' : 'OPEN DOSSIER'}
+                  {isTeacherView ? 'T-DOSSIER' : 'S-DOSSIER'}
                 </Link>
-                <Link
-                  to={`/${studentId}`}
-                  target="_blank"
-                  style={{
-                    backgroundColor: '#71c499',
-                    color: '#27427f',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: '0.85rem',
-                    fontWeight: 800,
-                    textDecoration: 'none',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  {isTeacherView ? 'MY QUIZ HUB' : 'STUDENT HUB'}
-                </Link>
+                {!isTeacherView && (
+                  <Link
+                    to={`/${studentId}`}
+                    target="_blank"
+                    style={{
+                      backgroundColor: '#71c499',
+                      color: '#27427f',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      textDecoration: 'none',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    STUDENT HUB
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -450,7 +439,7 @@ export default function TeacherHub() {
               letterSpacing: '0.06em',
               textTransform: 'uppercase'
             }}>
-              {isTeacherView ? 'SELF-ASSESSMENT SESSIONS' : 'CLASS HISTORY & BRIEFINGS'}
+              {isTeacherView ? 'ALL SESSIONS' : 'CLASS HISTORY & BRIEFINGS'}
             </div>
 
             {sessions.length === 0 ? (
@@ -469,11 +458,14 @@ export default function TeacherHub() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {sessions.map((sess) => {
                   let targetStudentLabel = '';
-                  if (isTeacherView && sess.student_quizzes && sess.student_quizzes.length > 0) {
-                    const lvl = sess.student_quizzes[0].level || '';
-                    const match = lvl.match(/\(([^)]+)\)/);
-                    if (match) {
-                      targetStudentLabel = ` • ${match[1]}`;
+                  if (isTeacherView) {
+                    const studentName = (sess as any).students?.name;
+                    if (studentName) {
+                      targetStudentLabel = ` • ${studentName}`;
+                    } else if (sess.student_quizzes && sess.student_quizzes.length > 0) {
+                      const lvl = sess.student_quizzes[0].level || '';
+                      const match = lvl.match(/\(([^)]+)\)/);
+                      if (match) targetStudentLabel = ` • ${match[1]}`;
                     }
                   }
 
@@ -506,14 +498,14 @@ export default function TeacherHub() {
                             title={isVerified ? "Audited and locked" : "Mark as audited and lock"}
                             style={{
                               backgroundColor: '#ffffff',
-                              color: '#a6b1ca',
+                              color: isVerified ? '#71c499' : '#a6b1ca',
                               border: 'none',
                               padding: '2px 4px',
                               borderRadius: 4,
                               fontSize: '0.78rem',
                               fontWeight: 800,
                               cursor: isVerified ? 'default' : 'pointer',
-                              opacity: isVerified ? 0.45 : 0.85,
+                              opacity: isVerified ? 1 : 0.85,
                               textTransform: 'lowercase',
                               outline: 'none'
                             }}
@@ -571,7 +563,7 @@ export default function TeacherHub() {
                           to={`/quiz/${sess.id}`}
                           target="_blank"
                           style={{
-                            backgroundColor: '#eaeffa',
+                            backgroundColor: '#71c499',
                             color: '#27427f',
                             padding: '6px 14px',
                             borderRadius: 8,
