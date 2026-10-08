@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 interface FocusArea {
@@ -28,6 +28,9 @@ interface QuizData {
 
 export default function QuizView() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const location = useLocation();
+  const isTeacherRoute = location.pathname.startsWith('/teacher');
+
   const [data, setData] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +109,7 @@ export default function QuizView() {
   const handleSaveChanges = async () => {
     if (!editData || !sessionId) return;
     setSaving(true);
-    setStatusMsg({ text: 'Saving changes to Supabase...', color: '#27427f' });
+    setStatusMsg({ text: 'Saving changes...', color: '#27427f' });
 
     try {
       const { error } = await supabase
@@ -182,12 +185,11 @@ export default function QuizView() {
   }
 
   const currentLevel = (isEditing && editData ? editData.level : data.level).toUpperCase();
-  const isPt = currentLevel.includes('A1') || (currentLevel.includes('A2') && !currentLevel.includes('COMUNICATIVO'));
+  const isPt = currentLevel.includes('A1');
 
   let levelLabel = isEditing && editData ? editData.level : data.level;
-  if (isPt) {
-    if (levelLabel.includes('A1')) levelLabel = 'A1 (Iniciante)';
-    if (levelLabel.includes('A2')) levelLabel = 'A2 (Pré-intermediário)';
+  if (isPt && levelLabel.includes('A1')) {
+    levelLabel = 'A1 (Iniciante)';
   }
 
   const focusTitle = isPt ? 'Área de Foco' : 'Focus Areas';
@@ -198,100 +200,127 @@ export default function QuizView() {
   const answeredCount = Object.keys(userAnswers).length;
 
   return (
-    <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '12px 14px 40px 14px', color: '#1e293b' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
-        
-        {/* Editorial Bar */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: 10,
-          padding: '10px 16px',
-          marginBottom: 14,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          borderBottom: '4px solid #27427f',
-          flexWrap: 'wrap',
-          gap: 10
-        }}>
-          <div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase' }}>
-              Editorial Panel:
-            </span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginLeft: 6 }}>
-              {isEditing ? 'Editing Mode Active' : 'Student View'}
-            </span>
+    <div style={{
+      backgroundColor: '#a6b1ca',
+      minHeight: '100vh',
+      padding: isTeacherRoute ? '24px 16px 48px' : '12px 14px 40px 14px',
+      color: '#1e293b'
+    }}>
+      <div style={{ maxWidth: 820, margin: '0 auto' }}>
+
+        {/* ADMIN ONLY: Card 1 - Main Banner */}
+        {isTeacherRoute && (
+          <div style={{
+            backgroundColor: '#27427f',
+            borderRadius: 18,
+            padding: '16px 20px',
+            textAlign: 'center',
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              PEDAGOGICAL DASHBOARD • QUIZ
+            </div>
           </div>
+        )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {statusMsg && (
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: statusMsg.color }}>
-                {statusMsg.text}
-              </span>
-            )}
+        {/* ADMIN ONLY: Card 2 - Navigation & Editorial Card */}
+        {isTeacherRoute && (
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: 10,
+            padding: '12px 18px',
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            borderBottom: '4px solid #27427f'
+          }}>
+            <Link
+              to={`/teacher/briefing/${sessionId}`}
+              style={{
+                color: '#27427f',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '0.88rem'
+              }}
+            >
+              ← Back to Briefing
+            </Link>
 
-            {!isEditing ? (
-              <button
-                type="button"
-                onClick={handleToggleEdit}
-                style={{
-                  backgroundColor: '#27427f',
-                  color: '#eaeffa',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  textTransform: 'uppercase'
-                }}
-              >
-                Edit Content
-              </button>
-            ) : (
-              <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {statusMsg && (
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: statusMsg.color }}>
+                  {statusMsg.text}
+                </span>
+              )}
+
+              {!isEditing ? (
                 <button
                   type="button"
-                  disabled={saving}
                   onClick={handleToggleEdit}
                   style={{
-                    backgroundColor: '#eaeffa',
+                    backgroundColor: '#ffffff',
                     color: '#27427f',
-                    border: 'none',
-                    padding: '6px 12px',
+                    border: '1px solid #27427f',
+                    padding: '8px 16px',
                     borderRadius: 8,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: saving ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={handleSaveChanges}
-                  style={{
-                    backgroundColor: saving ? '#94a3b8' : '#71c499',
-                    color: '#27427f',
-                    border: 'none',
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    fontSize: '0.82rem',
+                    fontSize: '0.85rem',
                     fontWeight: 800,
-                    cursor: saving ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     textTransform: 'uppercase'
                   }}
                 >
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  EDIT CONTENT
                 </button>
-              </>
-            )}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleToggleEdit}
+                    style={{
+                      backgroundColor: '#eaeffa',
+                      color: '#27427f',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={handleSaveChanges}
+                    style={{
+                      backgroundColor: saving ? '#94a3b8' : '#71c499',
+                      color: '#27427f',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Header */}
+        {/* Student View Starts Here (Header) */}
         <header style={{
           backgroundColor: '#27427f',
           borderRadius: 18,

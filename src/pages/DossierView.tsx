@@ -24,11 +24,18 @@ export default function DossierView() {
   const [data, setData] = useState<DossierData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Estados de Edição Editorial (Padrão QuizView)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<DossierData | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ text: string; color: string } | null>(null);
+
+  // Estados de Staging e Sugestões
   const [editingKey, setEditingKey] = useState<keyof PendingSuggestions | null>(null);
   const [editedText, setEditedText] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ text: string; color: string } | null>(null);
 
+  // Estados do Brain Dump Manual
   const [brainDumpText, setBrainDumpText] = useState('');
   const [savingDump, setSavingDump] = useState(false);
 
@@ -54,7 +61,7 @@ export default function DossierView() {
 
       if (!error && record) {
         const studentInfo = record.students as any;
-        setData({
+        const parsed: DossierData = {
           studentName: studentInfo?.name || 'Student',
           studentId: studentId,
           personalContext: record.personal_context || 'No personal data recorded.',
@@ -62,13 +69,62 @@ export default function DossierView() {
           learningProfile: record.learning_profile || 'No learning profile recorded.',
           classHistory: record.class_history || 'No class history recorded.',
           pendingSuggestions: (record.pending_suggestions as PendingSuggestions) || {}
-        });
+        };
+        setData(parsed);
+        setEditData(JSON.parse(JSON.stringify(parsed)));
       }
       setLoading(false);
     }
 
     fetchDossier();
   }, [studentId]);
+
+  // Alternância do Modo de Edição
+  const handleToggleEdit = () => {
+    if (!isEditing && data) {
+      setEditData(JSON.parse(JSON.stringify(data)));
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+      setStatusMsg(null);
+    }
+  };
+
+  // Gravação no Supabase (Padrão QuizView)
+  const handleSaveChanges = async () => {
+    if (!editData || !studentId) return;
+    setSaving(true);
+    setStatusMsg({ text: 'Saving changes...', color: '#27427f' });
+
+    try {
+      const { error } = await supabase
+        .from('dossiers')
+        .update({
+          personal_context: editData.personalContext,
+          routine: editData.routine,
+          learning_profile: editData.learningProfile,
+          class_history: editData.classHistory,
+          updated_at: new Date().toISOString()
+        })
+        .eq('student_id', studentId);
+
+      if (error) throw error;
+
+      setData(JSON.parse(JSON.stringify(editData)));
+      setIsEditing(false);
+      setStatusMsg({ text: 'Changes saved successfully.', color: '#15803d' });
+      setTimeout(() => setStatusMsg(null), 4000);
+    } catch (err: any) {
+      setStatusMsg({ text: 'Error saving: ' + (err.message || 'Connection failed'), color: '#b91c1c' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (field: keyof DossierData, value: string) => {
+    if (!editData) return;
+    setEditData({ ...editData, [field]: value });
+  };
 
   const handleStartEdit = (key: keyof PendingSuggestions, currentSuggestionText: string) => {
     setEditingKey(key);
@@ -80,7 +136,7 @@ export default function DossierView() {
     setEditedText('');
   };
 
-  // Gravação Literal Direta no Supabase
+  // Gravação Direta de Sugestão de Staging no Supabase
   const handleApproveSuggestion = async (key: keyof PendingSuggestions, textToInsert: string) => {
     if (!data || !studentId || !textToInsert.trim()) return;
     setActionLoading(true);
@@ -129,6 +185,15 @@ export default function DossierView() {
         };
       });
 
+      setEditData(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          [dbFieldMap[key]]: updatedVal,
+          pendingSuggestions: updatedSuggestions
+        };
+      });
+
       setEditingKey(null);
       setEditedText('');
       setStatusMsg({ text: 'Entry approved and permanently saved.', color: '#15803d' });
@@ -159,6 +224,7 @@ export default function DossierView() {
       if (error) throw error;
 
       setData(prev => prev ? { ...prev, pendingSuggestions: updatedSuggestions } : null);
+      setEditData(prev => prev ? { ...prev, pendingSuggestions: updatedSuggestions } : null);
       if (editingKey === key) {
         setEditingKey(null);
         setEditedText('');
@@ -193,6 +259,7 @@ export default function DossierView() {
       if (error) throw error;
 
       setData(prev => prev ? { ...prev, classHistory: updatedHistory } : null);
+      setEditData(prev => prev ? { ...prev, classHistory: updatedHistory } : null);
       setBrainDumpText('');
       setStatusMsg({ text: 'Manual note saved to history.', color: '#15803d' });
       setTimeout(() => setStatusMsg(null), 4000);
@@ -265,7 +332,8 @@ export default function DossierView() {
               resize: 'vertical',
               outline: 'none',
               marginBottom: 10,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              boxSizing: 'border-box'
             }}
           />
         )}
@@ -314,8 +382,8 @@ export default function DossierView() {
                 disabled={actionLoading}
                 onClick={() => handleDiscardSuggestion(key)}
                 style={{
-                  backgroundColor: '#fee2e2',
-                  color: '#b91c1c',
+                  backgroundColor: '#b91c1c',
+                  color: '#ffffff',
                   border: 'none',
                   padding: '6px 12px',
                   borderRadius: 6,
@@ -386,36 +454,111 @@ export default function DossierView() {
         <div style={{
           backgroundColor: '#27427f',
           borderRadius: 18,
-          padding: 20,
+          padding: '16px 20px',
           textAlign: 'center',
-          marginBottom: 14,
+          marginBottom: 16,
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
         }}>
           <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {isTeacherSelf ? 'TEACHER DOSSIER (SELF-ASSESSMENT)' : 'CONFIDENTIAL STUDENT DOSSIER'}
+            {isTeacherSelf ? 'PEDAGOGICAL DASHBOARD • T-DOSSIER' : 'PEDAGOGICAL DASHBOARD • S-DOSSIER'}
           </div>
-          <div style={{ color: '#eaeffa', fontSize: '1.05rem', fontWeight: 700, marginTop: 4 }}>
-            {data.studentName}
+          <div style={{ color: '#ffffff', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>
+            {isTeacherSelf ? 'Lessandro Büll' : data.studentName}
           </div>
         </div>
 
-        {/* Navigation Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        {/* Navigation Card */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          borderRadius: 10,
+          padding: '12px 18px',
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          borderBottom: '4px solid #27427f'
+        }}>
           <Link
-            to={isTeacherSelf ? '/teacher' : `/teacher/${data.studentId}`}
+            to={isTeacherSelf ? '/teacher/lessandro-bull' : `/teacher/${data.studentId}`}
             style={{
-              backgroundColor: '#ffffff',
               color: '#27427f',
-              padding: '8px 16px',
-              borderRadius: 8,
-              fontSize: '0.85rem',
-              fontWeight: 700,
               textDecoration: 'none',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+              fontWeight: 700,
+              fontSize: '0.88rem'
             }}
           >
-            {isTeacherSelf ? '← Back to Overview' : '← Back to Classes'}
+            {isTeacherSelf ? '← Back to Classes' : '← Back to Classes'}
           </Link>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {statusMsg && (
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: statusMsg.color }}>
+                {statusMsg.text}
+              </span>
+            )}
+
+            {!isEditing ? (
+              <button
+                type="button"
+                onClick={handleToggleEdit}
+                style={{
+                  backgroundColor: '#ffffff',
+                  color: '#27427f',
+                  border: '1px solid #27427f',
+                  padding: '8px 16px',
+                  borderRadius: 8,
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textTransform: 'uppercase'
+                }}
+              >
+                EDIT CONTENT
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleToggleEdit}
+                  style={{
+                    backgroundColor: '#eaeffa',
+                    color: '#27427f',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleSaveChanges}
+                  style={{
+                    backgroundColor: saving ? '#94a3b8' : '#71c499',
+                    color: '#27427f',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 1. PERSONAL DATA */}
@@ -444,11 +587,33 @@ export default function DossierView() {
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
-          <div>{data.personalContext}</div>
+          {!isEditing ? (
+            <div>{data.personalContext}</div>
+          ) : (
+            <textarea
+              rows={4}
+              value={editData?.personalContext || ''}
+              onChange={(e) => updateField('personalContext', e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: 100,
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: '0.95rem',
+                color: '#1e293b',
+                resize: 'vertical',
+                backgroundColor: '#eaeffa',
+                outline: 'none',
+                boxSizing: 'border-box',
+                lineHeight: 1.5
+              }}
+            />
+          )}
           {renderStagingCard('personal_data')}
         </div>
 
-        {/* 2. ROUTINE */}
+        {/* 2. EXPERIENCES, ACTIVITIES & PLANS */}
         <div style={{
           backgroundColor: '#27427f',
           borderRadius: 10,
@@ -461,7 +626,7 @@ export default function DossierView() {
           letterSpacing: '0.06em',
           textTransform: 'uppercase'
         }}>
-          2. ROUTINE & DAILY CONTEXT
+          2. EXPERIENCES, ACTIVITIES & PLANS
         </div>
         <div style={{
           background: '#ffffff',
@@ -474,11 +639,33 @@ export default function DossierView() {
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
-          <div>{data.routine}</div>
+          {!isEditing ? (
+            <div>{data.routine}</div>
+          ) : (
+            <textarea
+              rows={4}
+              value={editData?.routine || ''}
+              onChange={(e) => updateField('routine', e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: 100,
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: '0.95rem',
+                color: '#1e293b',
+                resize: 'vertical',
+                backgroundColor: '#eaeffa',
+                outline: 'none',
+                boxSizing: 'border-box',
+                lineHeight: 1.5
+              }}
+            />
+          )}
           {renderStagingCard('routine')}
         </div>
 
-        {/* 3. LEARNING PROFILE */}
+        {/* 3. LEARNING STYLE & PREFERENCES (STUDENT) / PEDAGOGICAL APPROACH & STYLE (TEACHER) */}
         <div style={{
           backgroundColor: '#27427f',
           borderRadius: 10,
@@ -491,7 +678,7 @@ export default function DossierView() {
           letterSpacing: '0.06em',
           textTransform: 'uppercase'
         }}>
-          {isTeacherSelf ? '3. TUTOR PROFILE & CONDUCT' : '3. LEARNING PROFILE & CONDUCT'}
+          {isTeacherSelf ? '3. PEDAGOGICAL APPROACH & STYLE' : '3. LEARNING STYLE & PREFERENCES'}
         </div>
         <div style={{
           background: '#ffffff',
@@ -504,11 +691,33 @@ export default function DossierView() {
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
-          <div>{data.learningProfile}</div>
+          {!isEditing ? (
+            <div>{data.learningProfile}</div>
+          ) : (
+            <textarea
+              rows={4}
+              value={editData?.learningProfile || ''}
+              onChange={(e) => updateField('learningProfile', e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: 100,
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: '0.95rem',
+                color: '#1e293b',
+                resize: 'vertical',
+                backgroundColor: '#eaeffa',
+                outline: 'none',
+                boxSizing: 'border-box',
+                lineHeight: 1.5
+              }}
+            />
+          )}
           {renderStagingCard('learning_profile')}
         </div>
 
-        {/* 4. CLASS HISTORY */}
+        {/* 4. CUMULATIVE CLASS HISTORY */}
         <div style={{
           backgroundColor: '#27427f',
           borderRadius: 10,
@@ -521,7 +730,7 @@ export default function DossierView() {
           letterSpacing: '0.06em',
           textTransform: 'uppercase'
         }}>
-          {isTeacherSelf ? '4. CUMULATIVE TEACHING HISTORY' : '4. CUMULATIVE CLASS HISTORY'}
+          4. CUMULATIVE CLASS HISTORY
         </div>
         <div style={{
           background: '#ffffff',
@@ -534,7 +743,29 @@ export default function DossierView() {
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
-          <div>{data.classHistory}</div>
+          {!isEditing ? (
+            <div>{data.classHistory}</div>
+          ) : (
+            <textarea
+              rows={8}
+              value={editData?.classHistory || ''}
+              onChange={(e) => updateField('classHistory', e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: 180,
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: '0.95rem',
+                color: '#1e293b',
+                resize: 'vertical',
+                backgroundColor: '#eaeffa',
+                outline: 'none',
+                boxSizing: 'border-box',
+                lineHeight: 1.5
+              }}
+            />
+          )}
           {renderStagingCard('class_history')}
         </div>
 
@@ -588,7 +819,7 @@ export default function DossierView() {
               disabled={savingDump || !brainDumpText.trim()}
               onClick={handleSaveBrainDump}
               style={{
-                backgroundColor: (savingDump || !brainDumpText.trim()) ? '#94a3b8' : '#27427f',
+                backgroundColor: '#27427f',
                 color: '#ffffff',
                 border: 'none',
                 padding: '10px 22px',
