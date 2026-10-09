@@ -360,11 +360,52 @@ export default function BriefingView() {
           </div>
         </div>
 
-        {/* Section 1: Activities & Concepts Practiced */}
+        {/* Section 1: Conversation Assessment (4 Sentences) */}
         <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          ACTIVITIES & CONCEPTS PRACTICED
+          CONVERSATION ASSESSMENT
         </div>
         <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+          {!isEditing ? (
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+              {data.conversationAssessment || 'No conversation assessment registered.'}
+            </div>
+          ) : (
+            <textarea
+              rows={6}
+              value={editData?.conversationAssessment || ''}
+              onChange={(e) => setEditData(prev => prev ? { ...prev, conversationAssessment: e.target.value } : null)}
+              placeholder="Sentence 1: Hi, Lessandro...&#10;Sentence 2: For a student at level...&#10;Sentence 3: Practical calibrating tips...&#10;Sentence 4: Behavioral & confidence tips..."
+              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+            />
+          )}
+        </div>
+
+        {/* Section 2: Activities & Concepts Practiced */}
+        {/* Section 2: Activities & Concepts Practiced */}
+        <div style={{
+          backgroundColor: '#27427f',
+          color: '#ffffff',
+          fontWeight: 700,
+          fontSize: 13,
+          textAlign: 'center',
+          padding: '8px 14px',
+          borderRadius: 10,
+          marginBottom: 8,
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px'
+        }}>
+          ACTIVITIES & CONCEPTS PRACTICED
+        </div>
+        <div style={{
+          backgroundColor: '#ffffff',
+          borderRadius: 10,
+          borderBottom: '4px solid #27427f',
+          padding: '16px 20px',
+          marginBottom: 18,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          fontSize: 14.5,
+          lineHeight: 1.6
+        }}>
           {!isEditing ? (
             data.activitiesDone.length > 0 ? (
               <ul style={{ paddingLeft: 20, margin: 0 }}>
@@ -406,27 +447,61 @@ export default function BriefingView() {
           )}
         </div>
 
-        {/* Section 2: Conversation Assessment (4 Sentences) */}
-        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          CONVERSATION ASSESSMENT
+        {/* Section 3: Agreed Next Tasks */}
+        <div style={{
+          backgroundColor: '#27427f',
+          color: '#ffffff',
+          fontWeight: 700,
+          fontSize: 13,
+          textAlign: 'center',
+          padding: '8px 14px',
+          borderRadius: 10,
+          marginBottom: 8,
+          textTransform: 'uppercase',
+          letterSpacing: '0.6px'
+        }}>
+          AGREED NEXT TASKS
         </div>
-        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+        <div style={{
+          backgroundColor: '#ffffff',
+          borderRadius: 10,
+          borderBottom: '4px solid #27427f',
+          padding: '16px 20px',
+          marginBottom: 18,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          fontSize: 14.5,
+          lineHeight: 1.6,
+          whiteSpace: 'pre-wrap'
+        }}>
           {!isEditing ? (
-            <div style={{ whiteSpace: 'pre-wrap' }}>
-              {data.conversationAssessment || 'No conversation assessment registered.'}
+            <div>
+              {data.nextTasks
+                ? data.nextTasks.replace(/\n\n+/g, '\n')
+                : 'No specific next tasks scheduled.'}
             </div>
           ) : (
             <textarea
-              rows={6}
-              value={editData?.conversationAssessment || ''}
-              onChange={(e) => setEditData(prev => prev ? { ...prev, conversationAssessment: e.target.value } : null)}
-              placeholder="Sentence 1: Hi, Lessandro...&#10;Sentence 2: For a student at level...&#10;Sentence 3: Practical calibrating tips...&#10;Sentence 4: Behavioral & confidence tips..."
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+              rows={3}
+              value={editData?.nextTasks || ''}
+              onChange={(e) => setEditData(prev => prev ? { ...prev, nextTasks: e.target.value } : null)}
+              placeholder="Agreed tasks or commitments for the next class"
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: 6,
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#eaeffa',
+                fontSize: 14.5,
+                lineHeight: 1.6,
+                resize: 'vertical',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
           )}
         </div>
 
-        {/* Section 3: Teacher Focus Areas (5 Items) */}
+        {/* Section 4: Teacher Focus Areas (5 Items) */}
         <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           TEACHER FOCUS AREAS
         </div>
@@ -497,26 +572,6 @@ export default function BriefingView() {
                 + Add Focus Item
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Section 4: Agreed Next Tasks */}
-        <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          AGREED NEXT TASKS & COMMITMENTS
-        </div>
-        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
-          {!isEditing ? (
-            <div style={{ whiteSpace: 'pre-wrap' }}>
-              {data.nextTasks || 'No specific next tasks scheduled.'}
-            </div>
-          ) : (
-            <textarea
-              rows={3}
-              value={editData?.nextTasks || ''}
-              onChange={(e) => setEditData(prev => prev ? { ...prev, nextTasks: e.target.value } : null)}
-              placeholder="Agreed tasks or commitments for the next class"
-              style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.5, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-            />
           )}
         </div>
 
