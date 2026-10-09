@@ -120,7 +120,7 @@ export default function TeacherHub() {
     }
   };
 
-  // Disparo pontual por aluno e data
+  // Disparo pontual por aluno e data com contagem sincronizada
   const handleProcessSingleClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudentName || !selectedDate) {
@@ -128,7 +128,7 @@ export default function TeacherHub() {
       return;
     }
 
-    // Converte YYYY-MM-DD para "MMM D" (ex: "Sep 8")
+    // Converte YYYY-MM-DD para "MMM D" (ex: "Sep 30")
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const parts = selectedDate.split('-');
     const formattedDate = (parts.length === 3)
@@ -136,16 +136,31 @@ export default function TeacherHub() {
       : selectedDate;
 
     setTriggering(true);
-    setTriggerMsg({ text: `Locating and processing class for ${selectedStudentName} (${formattedDate})...`, color: '#27427f' });
 
     try {
       const url = `${APPS_SCRIPT_TRIGGER_URL}?action=processSingle&studentName=${encodeURIComponent(selectedStudentName)}&targetDate=${encodeURIComponent(formattedDate)}`;
       await fetch(url, { mode: 'no-cors' });
 
-      setTriggerMsg({ text: `Request sent for ${selectedStudentName}. Updating in 20 seconds...`, color: '#15803d' });
-      setTimeout(() => {
-        window.location.reload();
-      }, 20000);
+      let secondsLeft = 65;
+      setTriggerMsg({
+        text: `Processing ${selectedStudentName} (${formattedDate}) with Gemini 3.5... updating in ${secondsLeft}s`,
+        color: '#27427f'
+      });
+
+      const interval = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft > 0) {
+          setTriggerMsg({
+            text: `Processing ${selectedStudentName} (${formattedDate}) with Gemini 3.5... updating in ${secondsLeft}s`,
+            color: '#27427f'
+          });
+        } else {
+          clearInterval(interval);
+          setTriggerMsg({ text: 'Session processed! Reloading dashboard...', color: '#15803d' });
+          window.location.reload();
+        }
+      }, 1000);
+
     } catch (err: any) {
       setTriggerMsg({ text: 'Signal sent. Verify class list in a few moments.', color: '#475569' });
       setTriggering(false);
@@ -249,28 +264,28 @@ export default function TeacherHub() {
             }}>
               <form onSubmit={handleProcessSingleClass} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input
-  list="registered-students-list"
-  type="text"
-  placeholder="Select or type student..."
-  value={selectedStudentName}
-  onChange={(e) => setSelectedStudentName(e.target.value)}
-  style={{
-    flex: '1 1 200px',
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid #cbd5e1',
-    fontSize: '0.88rem',
-    fontWeight: 600,
-    color: '#1e293b',
-    backgroundColor: '#eaeffa',
-    outline: 'none'
-  }}
-/>
-<datalist id="registered-students-list">
-  {regularStudents.map(s => (
-    <option key={s.id} value={s.name} />
-  ))}
-</datalist>
+                  list="registered-students-list"
+                  type="text"
+                  placeholder="Select or type student..."
+                  value={selectedStudentName}
+                  onChange={(e) => setSelectedStudentName(e.target.value)}
+                  style={{
+                    flex: '1 1 200px',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.88rem',
+                    fontWeight: 600,
+                    color: '#1e293b',
+                    backgroundColor: '#eaeffa',
+                    outline: 'none'
+                  }}
+                />
+                <datalist id="registered-students-list">
+                  {regularStudents.map(s => (
+                    <option key={s.id} value={s.name} />
+                  ))}
+                </datalist>
 
                 <input
                   type="date"

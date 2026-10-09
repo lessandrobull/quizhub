@@ -18,15 +18,22 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
   * React Router DOM 7 (`7.18.4`)
   * Supabase JS Client (`^2.117.2`)
   * Suporte a SPA via `vercel.json` com regra de rewrite para `/index.html`
+* **Segurança e Blindagem Local (`.gitignore`):**
+  * O arquivo `Code.gs` é estritamente ignorado no Git para proteção de credenciais e chaves de nuvem (GCP Push Protection).
+  * O código do backend roda exclusivamente no Google Apps Script; qualquer atualização exige a criação de uma **Nova versão** em *Gerenciar implantações* para entrar em vigor no Web App.
 
 ---
 
-## 2. ROTAS E INTERFACE DA APLICAÇÃO (SPA)
+## 2. ROTAS E COMPONENTES DA APLICAÇÃO (SPA)
 
 * **`/`** &rarr; Redirecionamento automático para `/teacher`.
 * **`/:studentId`** &rarr; `StudentHub.tsx` (Dashboard do aluno com histórico de aulas e status).
 * **`/quiz/:sessionId`** &rarr; `QuizView.tsx` (Interface interativa do aluno e painel editorial do professor).
+  * Possui botão de retorno discreto **`HUB`** no topo esquerdo do card de título (fundo verde `#71c499`, texto `#27427f`), direcionando para `/:studentId`.
+  * Contém seção de **Lição de Casa (*Homework*)** com suporte a renderização discente e edição docente via `textarea`.
 * **`/teacher` e `/teacher/:studentId`** &rarr; `TeacherHub.tsx` (Painel mestre do professor, histórico de sessões, auditoria e disparos).
+  * Seletor de alunos com `<input>` e `<datalist>` nativo: permite escolher alunos cadastrados ou digitar novos nomes livremente.
+  * Cronômetro sincronizado de processamento pontual (65 segundos) ajustado ao tempo real da esteira de IA.
 * **`/teacher/briefing/:sessionId`** &rarr; `BriefingView.tsx` (Briefing pedagógico da sessão e edição de conduta).
 * **`/teacher/dossier/:studentId`** &rarr; `DossierView.tsx` (Dossiê evolutivo contínuo e gestão de staging do aluno).
 
@@ -35,36 +42,37 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 ## 3. BANCO DE DADOS (SUPABASE SCHEMA)
 
 1. **`students`**
-   * `id` (text, PK): Identificador no formato slug (ex.: `camilly-carmo`, `mari-lucena`, `lessandro-bull`).
-   * `name` (text): Nome completo formatado em Title Case estrito (ex.: `Camilly Carmo`).
+   * `id` (text, PK): Slug normalizado (ex.: `camilly-carmo`, `amanda-cardoso`, `lessandro-bull`).
+   * `name` (text): Nome completo formatado em Title Case estrito (ex.: `Amanda Cardoso`).
 2. **`class_sessions`**
    * `id` (uuid, PK): Identificador único da aula (`gen_random_uuid()`).
-   * `student_id` (text, FK &rarr; `students.id`): Vínculo do aluno ou do professor.
-   * `class_date` (text): Data formatada (ex.: `Sep 10`, `Aug 31`).
-   * `class_time` (text): Hora cheia truncada para baixo (ex.: `12h`, `18h`, `20h`).
+   * `student_id` (text, FK &rarr; `students.id`).
+   * `class_date` (text): Data formatada (ex.: `Sep 30`, `Aug 31`).
+   * `class_time` (text): Hora cheia truncada para baixo (ex.: `13h`, `17h`, `20h`).
    * `is_verified` (boolean): Flag de auditoria e imutabilidade (padrão `false`).
    * `created_at` (timestamp com fuso horário).
 3. **`student_quizzes`**
    * `id` (uuid, PK).
    * `session_id` (uuid, FK &rarr; `class_sessions.id`).
-   * `level` (text): Nível CEFR ou rótulo de calibração pedagógica.
+   * `level` (text): Nível CEFR ou calibração pedagógica.
    * `level_description` (text): Avaliação de fluência com exatamente 4 frases.
    * `focus_areas` (jsonb): Array com exatamente 5 itens de foco (`studentSaid`, `betterWay`, `explanation`, `examples`).
-   * `questions` (jsonb): Array com exatamente 10 questões de múltipla escolha (A a E) com gabarito e explicação.
+   * `questions` (jsonb): Array com exatamente 10 questões de múltipla escolha (A a E) com gabarito e explicação didática.
+   * `homework` (text, nullable): Lista itemizada com tarefas de fixação e compromissos acordados.
 4. **`teacher_briefings`**
    * `id` (uuid, PK).
    * `session_id` (uuid, FK &rarr; `class_sessions.id`).
-   * `diagnostic_focus` (text): Diagnóstico prioritário em inglês conciso.
+   * `diagnostic_focus` (text): Parágrafo único contínuo de exatamente 4 frases.
    * `activities_done` (jsonb / text[]): Lista de tópicos praticados.
-   * `next_tasks` (text): Tarefas ou compromissos combinados para a próxima aula.
+   * `next_tasks` (text): Lista itemizada com marcadores `•` e quebras duplas `\n\n`.
    * `teaching_tip_didactic` (text): Estratégia didática de condução.
    * `teaching_tip_behavioral` (text): Manejo comportamental e de confiança.
 5. **`dossiers`**
    * `id` (uuid, PK).
    * `student_id` (text, FK &rarr; `students.id`).
-   * `personal_context` (text): Fatos biográficos e pessoais do aluno.
-   * `routine` (text): Rotina diária e profissional.
-   * `learning_profile` (text): Padrões de retenção e comportamento.
+   * `personal_context` (text): Card 1 — Ficha cadastral estática por tópicos.
+   * `routine` (text): Card 2 — Linha do tempo com marcações `[DD/MM/YY]`.
+   * `learning_profile` (text): Card 3 — Dimensões pedagógicas separadas por `•` e `\n\n`.
    * `class_history` (text): Histórico cronológico das aulas.
    * `pending_suggestions` (jsonb): Staging com novas sugestões aguardando revisão.
    * `updated_at` (timestamp).
@@ -73,54 +81,87 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 
 ## 4. POLÍTICA DE COTAS E ARQUITETURA DE IA
 
-* **Modelo Oficial:** `gemini-2.5-flash` via Google AI Studio API.
-* **Cota Diária Estrita:** 20 requisições diárias gratuitas. A cota renova pontualmente às **21:00 BRT** (00:00 UTC).
+* **Cascata Oficial Gemini (Multi-Model Fallback):**
+  A esteira consome estritamente os endpoints da API oficial na seguinte ordem de prioridade:
+  1. `gemini-3.5-flash` (Modelo principal de alta performance)
+  2. `gemini-3-flash-preview` (Primeiro fallback para estabilidade de cotas)
+  3. `gemini-2.5-flash` (Segundo fallback de contingência)
+* **Cota Diária Estrita:** 20 requisições diárias gratuitas (renovação pontual às **21:00 BRT** / 00:00 UTC).
 * **Consumo Rígido por Aula:** **1 Aluno em uma aula = Rigorosamente 1 Requisição à API**.
   * A chamada única ao Gemini retorna simultaneamente:
-    1. Avaliação completa do aluno (Nível, Descrição de 4 frases, 5 Áreas de Foco, Quiz de 10 Questões).
-    2. Teacher Briefing (Diagnóstico, Atividades, Tarefas, Dicas didática e comportamental).
-    3. Sugestões de Dossiê do aluno (Staging).
-    4. Autoavaliação do professor (Nível de calibração, Descrição docente de 4 frases, 5 Áreas de Foco docente, Quiz pedagógico de 10 Questões, Briefing e Staging docente).
+    1. Avaliação completa do aluno (Nível CEFR, Descrição de 4 frases, 5 Áreas de Foco, Quiz de 10 Questões, Homework).
+    2. Teacher Briefing (Diagnóstico contínuo de 4 frases, Atividades, Próximas Tarefas com `\n\n`, Dicas didática e comportamental).
+    3. Sugestões de Dossiê do aluno (Staging com Cards 1, 2 e 3 formatados).
+    4. Autoavaliação do professor (Nível de calibração, Descrição docente de 4 frases, 5 Áreas de Foco docente, Quiz de 10 Questões, Briefing e Staging docente).
 * **Limites de Processamento:**
-  * **Gatilho Autônomo (Time-driven a cada 30 min):** Processa gravações novas com teto de **no máximo 2 aulas por ciclo**.
-  * **Lote Histórico Manual:** Executado manualmente pelo professor com teto máximo rígido de **8 aulas por pacote**.
-  * **Disparo Pontual na Interface:** O professor seleciona `[Aluno]` + `[Data]` no `TeacherHub.tsx` e aciona `Process This Class Only` (chamada direta via query parameters à URL do Apps Script, consumindo 1 requisição).
-* **Blindagem de Arquivos Pendentes:** Se qualquer aluno de uma gravação falhar (por rede, cota 429 ou erro de parsing), o arquivo do Google Docs **NÃO pode ser movido** para a pasta `Google Meet - Processadas`. Ele permanece na pasta raiz `Google Meet` para conclusão no ciclo seguinte.
+  * **Gatilho Autônomo (Time-driven a cada 30 min):** Processa com teto de **no máximo 2 aulas por ciclo**.
+  * **Lote Histórico Manual:** Teto máximo de **8 aulas por pacote**.
+  * **Disparo Pontual na Interface:** O professor seleciona `[Aluno]` + `[Data]` e aciona `Process This Class Only` (chamada via Web App, consumindo exatamente 1 requisição).
+* **Blindagem de Arquivos Pendentes:** Se qualquer aluno de uma gravação falhar ou ainda houver outro aluno pendente de processamento no mesmo arquivo, o Google Docs **NÃO pode ser movido** para `Google Meet - Processadas`.
 
 ---
 
-## 5. REGRAS DE NEGÓCIO E PADRONIZAÇÃO DE DADOS
+## 5. REGRAS DE FORMATAÇÃO E ESTRUTURAÇÃO DOS CARDS
+
+### Card 1 — Personal Data & Context (Ficha Cadastral Estática)
+* Formato estrito de tópicos cadastrais: `• Categoria: Termo / Entidade`.
+* **Proibições Rigorosas:**
+  * Proibida qualquer narrativa contínua ou estilo biográfico discursivo.
+  * Proibida a repetição de categorias ou rótulos (ex.: não repetir `Família:` ou `Profissão:`).
+  * Proibida a inclusão de sintomas passageiros de saúde (gripes, resfriados, indisposições temporárias).
+  * Proibida a inclusão de exames ou provas escolares pontuais (devem constar exclusivamente no Card 2).
+
+### Card 2 — Routine, Experiences & Plans (Linha do Tempo)
+* Cada evento, viagem, relato de rotina ou prova escolar deve ocupar sua própria linha isolada.
+* **Formatação Mandatória:** Separado por quebra de linha simples (`\n`) com carimbo temporal no formato `[DD/MM/YY]` no início da linha:
+  * Exemplo: `[30/09/26] Concluiu apresentação do projeto final no trabalho.`
+
+### Card 3 — Learning Style & Pedagogical Style
+* Dimensões analíticas separadas por marcadores `•` e quebras de linha duplas (`\n\n`).
+* No dossiê do professor (T-Dossier), deve registrar apenas novas condutas, técnicas e adaptações observadas na aula.
+
+### Teacher Briefing — Diagnostic Focus / Conversation Assessment
+* Exatamente **um parágrafo contínuo de 4 frases**, sem linhas em branco no meio.
+* As tarefas seguintes (*Next Tasks*) devem vir separadas por marcadores `•` e quebras de linha duplas (`\n\n`).
+
+### Quiz — Seção Homework
+* Localizada ao final do Quiz.
+* Lista itemizada com marcadores `•` e quebras de linha simples (`\n`).
+* **Filtro Estrito Anti-Conselho de Vida:** Proibido registrar conselhos cotidianos (segurança no trânsito, cuidados com gripe, conversas de despedida). Extrai exclusivamente deveres pedagógicos de estudo de inglês.
+* **Idioma:** Português para alunos A1; Inglês para alunos A2 e superiores.
+
+---
+
+## 6. REGRAS DE NEGÓCIO E PADRONIZAÇÃO DE DADOS
 
 ### A. Nomes e Identificadores
-* **Title Case Mandatório:** Nomes de alunos devem ser extraídos e padronizados em Title Case estrito (ex.: `CAMILLY CARMO` &rarr; `Camilly Carmo`).
-* **Regra de Dois Nomes:** Armazenam-se exclusivamente o Primeiro Nome e o Último Sobrenome (ex.: `Gabrielle Vieira`).
-* **Saudação na Avaliação (Frase 1):** Deve conter **estritamente o primeiro nome** do aluno (ex.: `Hi, Camilly.`, `Hi, Daiane.`). Sobrenomes na saudação são proibidos.
+* **Title Case Mandatório:** Nomes padronizados em Title Case estrito (ex.: `Amanda Cardoso`).
+* **Regra de Dois Nomes:** Armazenam-se exclusivamente o Primeiro Nome e o Último Sobrenome.
+* **Reconhecimento de Speaker na Transcrição:** O motor do Apps Script utiliza expressão regular com suporte a nomes simples e compostos antes dos dois-pontos:
+  `new RegExp("(^|\\n)\\s*" + targetFirst + "[^:\\n]*:", "i")` (reconhece `Amanda:`, `Amanda Cardoso:`, etc.).
+* **Saudação na Avaliação (Frase 1):** Deve conter **estritamente o primeiro nome** do aluno (ex.: `Hi, Amanda.`).
 
 ### B. Cálculo de Horários
-* O horário da aula é determinado somando o horário de início da reunião no Meet com o minuto exato em que o aluno começou a falar na aba `Transcript`.
-* **Truncamento para Baixo (`Math.floor`):** O horário final é obrigatoriamente truncado para baixo, no formato `[Hora]h`:
-  * `20:48` &rarr; **`20h`**
-  * `21:10` &rarr; **`21h`**
-  * `18:35` &rarr; **`18h`**
+* Calculado somando o início da reunião no Meet com o primeiro minuto em que o aluno falou na aba `Transcript`.
+* **Truncamento para Baixo (`Math.floor`):** Sempre no formato `[Hora]h` (ex.: `13h`, `17h`, `20h`).
 
-### C. Reconexão e Fusão de Aulas (Opção 1)
-* Se uma conexão cair e for gerado um novo documento do Meet para o mesmo aluno na mesma data e mesma hora truncada, o sistema não cria uma sessão duplicada.
-* O motor recupera a sessão existente, funde as transcrições e executa uma **reanálise consolidada** via `PATCH`, atualizando o Quiz, o Briefing e a autoavaliação docente em um único registro.
+### C. Reconexão e Fusão de Aulas
+* Se a conexão cair e uma nova gravação for gerada com o mesmo aluno na mesma data e mesma hora truncada, o sistema recupera a sessão anterior e realiza uma reanálise pedagógica consolidada via `PATCH`.
 
 ---
 
-## 6. CALIBRAÇÃO PEDAGÓGICA E IDIOMAS
+## 7. CALIBRAÇÃO PEDAGÓGICA E IDIOMAS
 
 ### A. Idioma por Área
-* **Área Docente (100% Inglês):** `TeacherHub`, `BriefingView`, `DossierView` e o painel editorial de `QuizView` devem operar estritamente em inglês.
+* **Área Docente (100% Inglês):** `TeacherHub`, `BriefingView`, `DossierView` e o painel editorial de `QuizView`.
 * **Área do Aluno (`QuizView` e `StudentHub`):**
-  * **A1 ou A2 Inicial:** Avaliações, explicações e títulos em **português** (aluno sem fluência para sustentar 2 minutos de conversa contínua).
-  * **A2 Comunicativo em diante:** Títulos, descrições e explicações em **inglês direto e simples** (nível comunicativo A2/B1).
+  * **A1 ou A2 Inicial:** Avaliações, explicações e títulos em **português**.
+  * **A2 Comunicativo em diante:** Títulos, descrições e explicações em **inglês direto e simples**.
   * **B1+ em diante:** 100% em **inglês fluente padrão**.
 
-### B. A Regra Mandatória da Frase 3
+### B. Regra Mandatória da Frase 3
 * A descrição de nível do aluno possui **exatamente 4 frases** (sem citar siglas CEFR no texto).
-* **Frase 3:** Ao mencionar qualquer estrutura gramatical ou termo formal (ex.: dependência preposicional, advérbios de suficiência, tempos verbais, conectores), é **obrigatório incluir no mínimo 2 exemplos práticos entre parênteses** imediatamente após o termo:
+* **Frase 3:** Ao mencionar qualquer estrutura gramatical ou termo formal, é **obrigatório incluir no mínimo 2 exemplos práticos entre parênteses**:
   * Exemplo: `pay close attention to dependent prepositions (such as 'rely on' and 'interested in') and sufficiency adverbs (such as 'warm enough' and 'too crowded').`
 
 ### C. Restrições Vocabulares e Tom
@@ -130,20 +171,12 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 
 ---
 
-## 7. AUDITORIA, IMUTABILIDADE E EXCLUSÃO
+## 8. AUDITORIA, IMUTABILIDADE E EXCLUSÃO
 
-* **Localização dos Controles:** Exclusivamente no painel docente *Class History & Briefings* (`TeacherHub.tsx`), à esquerda do título de cada sessão. O aluno nunca visualiza esses botões.
-* **Identidade Visual Camuflada:** Botões minúsculos com fundo idêntico ao card (`#ffffff`) e texto na cor `#a6b1ca` (mesma cor de fundo da página), mantendo discrição absoluta.
-* **Comportamento do Botão `x`:** Exclui definitivamente em cascata os registros da aula no Supabase (`student_quizzes`, `teacher_briefings` e `class_sessions`), removendo-a das visões docente e discente.
-* **Comportamento do Botão `ok`:**
+* **Localização dos Controles:** Exclusivamente no painel docente *Class History & Briefings* (`TeacherHub.tsx`), à esquerda do título de cada sessão.
+* **Identidade Visual Camuflada:** Botões minúsculos com fundo `#ffffff` e texto `#a6b1ca`.
+* **Botão `x`:** Exclui definitivamente em cascata os registros da aula no Supabase (`student_quizzes`, `teacher_briefings` e `class_sessions`).
+* **Botão `ok`:**
   * Atualiza o registro no Supabase para `is_verified = true`.
   * Oculta o botão `x` da linha e desativa a ação de `ok`.
-  * **Imutabilidade Absoluta:** Sessões com `is_verified = true` ficam permanentemente travadas contra regravações ou sobrescritas por qualquer rotina autônoma do Apps Script.
-
----
-
-## 8. RÉPLICA LOCAL DO BACKEND (Code.gs)
-
-* **Finalidade e Localização:** O arquivo `Code.gs` localizado na raiz do repositório é a réplica exata e espelho de referência do código que roda no Google Apps Script[cite: 4].
-* **Protocolo de Sincronização Obrigatória:** Toda e qualquer alteração de regras de negócio, prompts, tratamento de erros, endpoints ou schemas realizada no motor do Google Apps Script deve ser obrigatoriamente refletida no arquivo `Code.gs` local e versionada no Git.
-* **Visibilidade para IAs e Desenvolvedores:** Este arquivo serve como referência direta de consulta para garantir que modificações futuras no frontend ou no banco respeitem a lógica interna de processamento autônomo.
+  * **Imutabilidade Absoluta:** Sessões auditadas ficam permanentemente travadas contra qualquer sobrescrita por rotinas autônomas.
