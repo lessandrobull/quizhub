@@ -18,7 +18,55 @@ interface ClassSessionItem {
   is_verified?: boolean;
   student_quizzes?: { level: string }[];
 }
+function formatSessionDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  if (/^\d{2}\/\d{2}$/.test(trimmed)) return trimmed;
 
+  const monthMap: Record<string, string> = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  };
+
+  const mmmDMatch = trimmed.match(/^([a-zA-Z]{3})\s+(\d{1,2})$/);
+  if (mmmDMatch) {
+    const monthKey = mmmDMatch[1].toLowerCase();
+    const monthNum = monthMap[monthKey];
+    if (monthNum) {
+      const dayNum = mmmDMatch[2].padStart(2, '0');
+      return `${dayNum}/${monthNum}`;
+    }
+  }
+
+  const ymdMatch = trimmed.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    return `${ymdMatch[2]}/${ymdMatch[1]}`;
+  }
+
+  return trimmed;
+}
+
+function getStudentDisplayName(fullName: string, allNames: string[]): string {
+  if (!fullName) return '';
+  const clean = fullName.trim();
+  const parts = clean.split(/\s+/);
+  const firstName = parts[0];
+  if (parts.length === 1) return firstName;
+
+  const hasDuplicateFirst = allNames.some(name => {
+    const otherClean = name.trim();
+    if (otherClean.toLowerCase() === clean.toLowerCase()) return false;
+    const otherFirst = otherClean.split(/\s+/)[0];
+    return otherFirst.toLowerCase() === firstName.toLowerCase();
+  });
+
+  if (hasDuplicateFirst) {
+    const lastName = parts[parts.length - 1];
+    return `${firstName} ${lastName.charAt(0).toUpperCase()}.`;
+  }
+
+  return firstName;
+}
 export default function TeacherHub() {
   const { studentId } = useParams<{ studentId: string }>();
   const [students, setStudents] = useState<Student[]>([]);
@@ -44,10 +92,6 @@ export default function TeacherHub() {
 
         if (studentsList) {
           setStudents(studentsList);
-          const firstRegular = studentsList.find(s => s.id !== 'lessandro-bull');
-          if (firstRegular && !selectedStudentName) {
-            setSelectedStudentName(firstRegular.name);
-          }
         }
 
         if (studentId) {
@@ -188,22 +232,44 @@ export default function TeacherHub() {
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
         {/* Main Banner */}
-        <div style={{
-          backgroundColor: '#27427f',
-          borderRadius: 18,
-          padding: '16px 20px',
-          textAlign: 'center',
-          marginBottom: 16,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-        }}>
-          <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <div
+          className="teacher-main-banner"
+          style={{
+            backgroundColor: '#27427f',
+            borderRadius: 18,
+            padding: '16px 20px',
+            textAlign: 'center',
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}
+        >
+          <style>{`
+            .teacher-banner-title {
+              color: #71c499;
+              font-size: 1.15rem;
+              font-weight: 800;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              white-space: nowrap;
+            }
+            @media (max-width: 640px) {
+              .teacher-main-banner {
+                padding: 14px 10px !important;
+              }
+              .teacher-banner-title {
+                font-size: 0.80rem !important;
+                letter-spacing: 0.02em !important;
+              }
+            }
+          `}</style>
+          <div className="teacher-banner-title">
             {!studentId
               ? 'PEDAGOGICAL DASHBOARD • QUIZHUB'
               : (isTeacherView ? 'PEDAGOGICAL DASHBOARD • ALL SESSIONS' : 'PEDAGOGICAL DASHBOARD • STUDENT SESSIONS')}
           </div>
           {currentStudent && !isTeacherView && (
             <div style={{ color: '#eaeffa', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>
-              Student: {currentStudent.name}
+              {currentStudent.name}
             </div>
           )}
         </div>
@@ -212,40 +278,74 @@ export default function TeacherHub() {
         {!studentId && (
           <div>
             {/* Teacher Self-Assessment Block */}
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 12,
-              padding: '16px 20px',
-              marginBottom: 16,
-              boxShadow: '0 4px 12px rgba(39, 66, 127, 0.15)',
-              borderBottom: '4px solid #27427f',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 12
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, transform: 'translateY(1px)' }}>
+            <div
+              className="teacher-area-card"
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 12,
+                padding: '16px 20px',
+                marginBottom: 16,
+                boxShadow: '0 4px 12px rgba(39, 66, 127, 0.15)',
+                borderBottom: '4px solid #27427f',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12
+              }}
+            >
+              <style>{`
+                .teacher-area-left {
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                }
+                .teacher-area-sub {
+                  font-size: 1.05rem;
+                  font-weight: 800;
+                  color: #1e293b;
+                  line-height: 1.2;
+                }
+                @media (max-width: 640px) {
+                  .teacher-area-card {
+                    padding: 12px 14px !important;
+                    gap: 8px !important;
+                  }
+                  .teacher-area-left {
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    gap: 2px !important;
+                  }
+                  .teacher-area-sub {
+                    font-size: 0.82rem !important;
+                  }
+                }
+              `}</style>
+              <div className="teacher-area-left">
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1 }}>
                   TEACHER AREA
                 </span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>
+                <span className="teacher-area-sub">
                   Pedagogical Self-Assessment
                 </span>
               </div>
 
-              <div>
+              <div style={{ flexShrink: 0 }}>
                 <Link
                   to="/teacher/lessandro-bull"
                   style={{
                     backgroundColor: '#27427f',
                     color: '#eaeffa',
-                    padding: '8px 16px',
+                    padding: '8px 14px',
                     borderRadius: 8,
-                    fontSize: '0.82rem',
+                    fontSize: '0.80rem',
                     fontWeight: 700,
                     textDecoration: 'none',
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   ALL SESSIONS
@@ -257,29 +357,84 @@ export default function TeacherHub() {
             <div style={{
               backgroundColor: '#ffffff',
               borderRadius: 10,
-              padding: '14px 18px',
+              padding: '14px 12px',
               marginBottom: 20,
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               borderBottom: '4px solid #27427f'
             }}>
-              <form onSubmit={handleProcessSingleClass} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <style>{`
+                .process-form {
+                  display: flex;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                  align-items: center;
+                }
+                .process-student-input {
+                  flex: 1 1 200px;
+                  padding: 8px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #cbd5e1;
+                  font-size: 0.88rem;
+                  font-weight: 600;
+                  color: #1e293b;
+                  background-color: #eaeffa;
+                  outline: none;
+                }
+                .process-date-input {
+                  flex: 1 1 160px;
+                  padding: 8px 12px;
+                  border-radius: 8px;
+                  border: 1px solid #cbd5e1;
+                  font-size: 0.88rem;
+                  font-weight: 600;
+                  color: #1e293b;
+                  background-color: #eaeffa;
+                  outline: none;
+                }
+                .process-btn-desktop {
+                  display: inline;
+                }
+                .process-btn-mobile {
+                  display: none;
+                }
+                @media (max-width: 640px) {
+                  .process-form {
+                    flex-wrap: nowrap !important;
+                    gap: 6px !important;
+                  }
+                  .process-student-input {
+                    flex: 1 1 0% !important;
+                    min-width: 0 !important;
+                    padding: 8px 6px !important;
+                    font-size: 0.78rem !important;
+                  }
+                  .process-date-input {
+                    flex: 0 0 94px !important;
+                    width: 94px !important;
+                    padding: 8px 4px !important;
+                    font-size: 0.74rem !important;
+                  }
+                  .process-submit-btn {
+                    padding: 8px 10px !important;
+                    font-size: 0.75rem !important;
+                  }
+                  .process-btn-desktop {
+                    display: none !important;
+                  }
+                  .process-btn-mobile {
+                    display: inline !important;
+                  }
+                }
+              `}</style>
+              <form onSubmit={handleProcessSingleClass} className="process-form">
                 <input
                   list="registered-students-list"
                   type="text"
                   placeholder="Select or type student..."
                   value={selectedStudentName}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setSelectedStudentName(e.target.value)}
-                  style={{
-                    flex: '1 1 200px',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    color: '#1e293b',
-                    backgroundColor: '#eaeffa',
-                    outline: 'none'
-                  }}
+                  className="process-student-input"
                 />
                 <datalist id="registered-students-list">
                   {regularStudents.map(s => (
@@ -291,22 +446,13 @@ export default function TeacherHub() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{
-                    flex: '1 1 160px',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    fontWeight: 600,
-                    color: '#1e293b',
-                    backgroundColor: '#eaeffa',
-                    outline: 'none'
-                  }}
+                  className="process-date-input"
                 />
 
                 <button
                   type="submit"
                   disabled={triggering || !selectedStudentName || !selectedDate}
+                  className="process-submit-btn"
                   style={{
                     backgroundColor: '#27427f',
                     color: '#ffffff',
@@ -317,10 +463,16 @@ export default function TeacherHub() {
                     fontWeight: 800,
                     cursor: (triggering || !selectedStudentName || !selectedDate) ? 'not-allowed' : 'pointer',
                     textTransform: 'uppercase',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}
                 >
-                  {triggering ? 'Processing...' : 'Process This Class Only'}
+                  {triggering ? '...' : (
+                    <>
+                      <span className="process-btn-desktop">Process This Class Only</span>
+                      <span className="process-btn-mobile">Process</span>
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -384,44 +536,92 @@ export default function TeacherHub() {
         {/* SPECIFIC STUDENT / TEACHER SESSIONS */}
         {studentId && (
           <div>
-            <div style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 10,
-              padding: '12px 18px',
-              marginBottom: 16,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 10,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              borderBottom: '4px solid #27427f'
-            }}>
+            <div
+              className="student-nav-card"
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: 10,
+                padding: '12px 18px',
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                borderBottom: '4px solid #27427f'
+              }}
+            >
+              <style>{`
+                .student-nav-card {
+                  flex-wrap: wrap;
+                  gap: 10px;
+                }
+                .student-nav-back {
+                  color: #27427f;
+                  text-decoration: none;
+                  font-weight: 700;
+                  font-size: 0.88rem;
+                  white-space: nowrap;
+                }
+                .student-nav-actions {
+                  display: flex;
+                  gap: 8px;
+                  flex-shrink: 0;
+                }
+                .student-nav-btn-dossier {
+                  background-color: #27427f;
+                  color: #eaeffa;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  font-size: 0.85rem;
+                  font-weight: 700;
+                  text-decoration: none;
+                  text-transform: uppercase;
+                  white-space: nowrap;
+                }
+                .student-nav-btn-hub {
+                  background-color: #71c499;
+                  color: #27427f;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  font-size: 0.85rem;
+                  font-weight: 800;
+                  text-decoration: none;
+                  text-transform: uppercase;
+                  white-space: nowrap;
+                }
+                @media (max-width: 640px) {
+                  .student-nav-card {
+                    padding: 10px 8px !important;
+                    flex-wrap: nowrap !important;
+                    gap: 6px !important;
+                  }
+                  .student-nav-back {
+                    font-size: 0.72rem !important;
+                  }
+                  .student-nav-actions {
+                    gap: 4px !important;
+                  }
+                  .student-nav-btn-dossier {
+                    padding: 6px 8px !important;
+                    font-size: 0.70rem !important;
+                  }
+                  .student-nav-btn-hub {
+                    padding: 6px 8px !important;
+                    font-size: 0.70rem !important;
+                  }
+                }
+              `}</style>
               <Link
                 to="/teacher"
-                style={{
-                  color: '#27427f',
-                  textDecoration: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.88rem'
-                }}
+                className="student-nav-back"
               >
                 &larr; Back to Overview
               </Link>
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="student-nav-actions">
                 <Link
                   to={`/teacher/dossier/${studentId}`}
-                  style={{
-                    backgroundColor: '#27427f',
-                    color: '#eaeffa',
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    textTransform: 'uppercase'
-                  }}
+                  className="student-nav-btn-dossier"
                 >
                   {isTeacherView ? 'T-DOSSIER' : 'S-DOSSIER'}
                 </Link>
@@ -429,16 +629,7 @@ export default function TeacherHub() {
                   <Link
                     to={`/${studentId}`}
                     target="_blank"
-                    style={{
-                      backgroundColor: '#71c499',
-                      color: '#27427f',
-                      padding: '8px 16px',
-                      borderRadius: 8,
-                      fontSize: '0.85rem',
-                      fontWeight: 800,
-                      textDecoration: 'none',
-                      textTransform: 'uppercase'
-                    }}
+                    className="student-nav-btn-hub"
                   >
                     STUDENT HUB
                   </Link>
@@ -474,42 +665,73 @@ export default function TeacherHub() {
                 No sessions registered yet.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <style>{`
+                  .session-card {
+                    padding: 16px 20px;
+                  }
+                  .session-title-desktop {
+                    display: inline;
+                  }
+                  .session-title-mobile {
+                    display: none;
+                  }
+                  @media (max-width: 640px) {
+                    .session-card {
+                      padding: 12px 14px 12px 8px !important;
+                    }
+                    .session-title-desktop {
+                      display: none !important;
+                    }
+                    .session-title-mobile {
+                      display: inline !important;
+                    }
+                  }
+                `}</style>
                 {sessions.map((sess) => {
-                  let targetStudentLabel = '';
+                  let desktopStudentLabel = '';
+                  let mobileStudentLabel = '';
+
                   if (isTeacherView) {
-                    const studentName = (sess as any).students?.name;
-                    if (studentName) {
-                      targetStudentLabel = ` • ${studentName}`;
-                    } else if (sess.student_quizzes && sess.student_quizzes.length > 0) {
+                    let rawStudentName = (sess as any).students?.name || '';
+                    if (!rawStudentName && sess.student_quizzes && sess.student_quizzes.length > 0) {
                       const lvl = sess.student_quizzes[0].level || '';
                       const match = lvl.match(/\(([^)]+)\)/);
-                      if (match) targetStudentLabel = ` • ${match[1]}`;
+                      if (match) rawStudentName = match[1];
+                    }
+                    if (rawStudentName) {
+                      desktopStudentLabel = ` • ${rawStudentName}`;
+                      const allNames = students.map(s => s.name);
+                      const shortName = getStudentDisplayName(rawStudentName, allNames);
+                      if (shortName) {
+                        mobileStudentLabel = ` ${shortName}`;
+                      }
                     }
                   }
 
-                  const timeDisplay = sess.class_time ? ` at ${sess.class_time}` : '';
+                  const desktopTimeDisplay = sess.class_time ? ` at ${sess.class_time}` : '';
+                  const mobileTimeDisplay = sess.class_time ? ` ${sess.class_time}` : '';
+                  const formattedDate = formatSessionDate(sess.class_date);
                   const isVerified = Boolean(sess.is_verified);
 
                   return (
                     <div
                       key={sess.id}
+                      className="session-card"
                       style={{
                         background: '#ffffff',
                         borderRadius: 10,
-                        padding: '16px 20px',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                         borderBottom: '4px solid #27427f',
-                        flexWrap: 'wrap',
-                        gap: 10
+                        gap: 8
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {/* Botões Camuflados no Card: fundo branco #ffffff, texto #a6b1ca */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {/* Lado Esquerdo: ok / x e Título Responsivo */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                           <button
                             type="button"
                             disabled={isVerified}
@@ -556,24 +778,38 @@ export default function TeacherHub() {
                           )}
                         </div>
 
-                        {/* Título da Sessão */}
-                        <strong style={{ fontSize: '1rem', color: '#1e293b' }}>
-                          Session: {sess.class_date}{timeDisplay}{targetStudentLabel}
+                        {/* Versão Desktop (PC) */}
+                        <strong className="session-title-desktop" style={{ fontSize: '1rem', color: '#1e293b' }}>
+                          Session: {sess.class_date}{desktopTimeDisplay}{desktopStudentLabel}
                         </strong>
+
+                        {/* Versão Mobile (Celular) */}
+                        <span className="session-title-mobile" style={{
+                          fontSize: '0.92rem',
+                          fontWeight: 700,
+                          color: '#1e293b',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {formattedDate}{mobileTimeDisplay}{mobileStudentLabel}
+                        </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      {/* Lado Direito: Ações */}
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                         <Link
                           to={`/teacher/briefing/${sess.id}`}
                           style={{
                             backgroundColor: '#27427f',
                             color: '#eaeffa',
-                            padding: '6px 14px',
+                            padding: '6px 12px',
                             borderRadius: 8,
-                            fontSize: '0.82rem',
+                            fontSize: '0.78rem',
                             fontWeight: 700,
                             textDecoration: 'none',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           BRIEFING
@@ -584,12 +820,13 @@ export default function TeacherHub() {
                           style={{
                             backgroundColor: '#71c499',
                             color: '#27427f',
-                            padding: '6px 14px',
+                            padding: '6px 12px',
                             borderRadius: 8,
-                            fontSize: '0.82rem',
+                            fontSize: '0.78rem',
                             fontWeight: 700,
                             textDecoration: 'none',
-                            textTransform: 'uppercase'
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           QUIZ

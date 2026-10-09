@@ -196,15 +196,37 @@ export default function BriefingView() {
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
         {/* 1. Main Banner */}
-        <div style={{
-          backgroundColor: '#27427f',
-          borderRadius: 18,
-          padding: '16px 20px',
-          textAlign: 'center',
-          marginBottom: 16,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-        }}>
-          <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <div
+          className="briefing-main-banner"
+          style={{
+            backgroundColor: '#27427f',
+            borderRadius: 18,
+            padding: '16px 20px',
+            textAlign: 'center',
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          }}
+        >
+          <style>{`
+            .briefing-banner-title {
+              color: #71c499;
+              font-size: 1.15rem;
+              font-weight: 800;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+              white-space: nowrap;
+            }
+            @media (max-width: 640px) {
+              .briefing-main-banner {
+                padding: 14px 10px !important;
+              }
+              .briefing-banner-title {
+                font-size: 0.80rem !important;
+                letter-spacing: 0.02em !important;
+              }
+            }
+          `}</style>
+          <div className="briefing-banner-title">
             PEDAGOGICAL DASHBOARD • BRIEFING
           </div>
         </div>

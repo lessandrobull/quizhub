@@ -27,10 +27,9 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 ## 2. ROTAS E COMPONENTES DA APLICAÇÃO (SPA)
 
 * **`/`** &rarr; Redirecionamento automático para `/teacher`.
-* **`/:studentId`** &rarr; `StudentHub.tsx` (Dashboard do aluno com histórico de aulas e status).
+* **`/:studentId`** &rarr; `StudentHub.tsx` (Dashboard do aluno com histórico de aulas, status e card azul de `Homework for next class` posicionado acima da lista de quizzes).
 * **`/quiz/:sessionId`** &rarr; `QuizView.tsx` (Interface interativa do aluno e painel editorial do professor).
   * Possui botão de retorno discreto **`HUB`** no topo esquerdo do card de título (fundo verde `#71c499`, texto `#27427f`), direcionando para `/:studentId`.
-  * Contém seção de **Lição de Casa (*Homework*)** com suporte a renderização discente e edição docente via `textarea`.
 * **`/teacher` e `/teacher/:studentId`** &rarr; `TeacherHub.tsx` (Painel mestre do professor, histórico de sessões, auditoria e disparos).
   * Seletor de alunos com `<input>` e `<datalist>` nativo: permite escolher alunos cadastrados ou digitar novos nomes livremente.
   * Cronômetro sincronizado de processamento pontual (65 segundos) ajustado ao tempo real da esteira de IA.
@@ -124,13 +123,12 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 * Exatamente **um parágrafo contínuo de 4 frases**, sem linhas em branco no meio.
 * As tarefas seguintes (*Next Tasks*) devem vir separadas por marcadores `•` e quebras de linha duplas (`\n\n`).
 
-### Quiz — Seção Homework
-* Localizada ao final do Quiz.
+### Seção Homework (Student Hub)
+* Exibida no Student Hub (`/:studentId`), posicionada abaixo do card do aluno e acima da lista de quizzes, em card azul com título estrito em inglês para todos os níveis: `Homework for next class`.
 * Lista itemizada com marcadores `•` e quebras de linha simples (`\n`).
+* **Regra de Extração e Preenchimento (Até 3 atividades):** Registra estritamente lições combinadas em voz alta durante a aula. Caso não tenham sido combinadas 3 atividades, a IA avalia a necessidade mais relevante para o aluno (com base no nível e nas atividades desenvolvidas na aula) e completa até 3 tarefas. Limite estrito: no máximo 3 atividades, nunca mais do que 3.
 * **Filtro Estrito Anti-Conselho de Vida:** Proibido registrar conselhos cotidianos (segurança no trânsito, cuidados com gripe, conversas de despedida). Extrai exclusivamente deveres pedagógicos de estudo de inglês.
-* **Idioma:** Português para alunos A1; Inglês para alunos A2 e superiores.
-
----
+* **Idioma do Conteúdo:** Português para alunos A1; Inglês para alunos A2 e superiores.
 
 ## 6. REGRAS DE NEGÓCIO E PADRONIZAÇÃO DE DADOS
 

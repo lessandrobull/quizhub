@@ -202,8 +202,6 @@ export default function QuizView() {
   const focusTitle = isPt ? 'Área de Foco' : 'Focus Areas';
   const quizTitle = isPt ? 'Praticar o Quiz' : 'Practice Quiz';
   const expLabel = isPt ? 'Explicação:' : 'Explanation:';
-  const homeworkTitle = isPt ? 'Lição de Casa' : 'Homework';
-
   const totalQuestions = data.quiz.length;
   const answeredCount = Object.keys(userAnswers).length;
 
@@ -329,37 +327,72 @@ export default function QuizView() {
         )}
 
         {/* Student View Starts Here (Header) */}
-        <header style={{
-          backgroundColor: '#27427f',
-          borderRadius: 18,
-          padding: 16,
-          textAlign: 'center',
-          marginBottom: 16,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          position: 'relative'
-        }}>
+        <header
+          className="quiz-header"
+          style={{
+            backgroundColor: '#27427f',
+            borderRadius: 18,
+            textAlign: 'center',
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            position: 'relative'
+          }}
+        >
+          <style>{`
+            .quiz-header {
+              padding: 16px;
+            }
+            .quiz-hub-btn-desktop {
+              display: inline-flex;
+              position: absolute;
+              left: 16px;
+              top: 50%;
+              transform: translateY(-50%);
+              background-color: #71c499;
+              color: #27427f;
+              padding: 6px 14px;
+              border-radius: 8px;
+              font-size: 0.82rem;
+              font-weight: 800;
+              text-decoration: none;
+              letter-spacing: 0.04em;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+              align-items: center;
+              justify-content: center;
+            }
+            .quiz-info-desktop {
+              display: block;
+              font-size: 15px;
+              font-weight: 700;
+              color: #eaeffa;
+              margin-top: 4px;
+            }
+            .quiz-mobile-row {
+              display: none;
+            }
+            @media (max-width: 640px) {
+              .quiz-header {
+                padding: 14px 16px !important;
+                text-align: center;
+              }
+              .quiz-hub-btn-desktop {
+                display: none !important;
+              }
+              .quiz-info-desktop {
+                display: none !important;
+              }
+              .quiz-mobile-row {
+                display: flex !important;
+                align-items: center;
+                justify-content: center !important;
+                gap: 10px;
+                margin-top: 8px;
+              }
+            }
+          `}</style>
+
           {data.studentId && (
-            <Link
-              to={`/${data.studentId}`}
-              style={{
-                position: 'absolute',
-                left: 16,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: '#71c499',
-                color: '#27427f',
-                padding: '6px 14px',
-                borderRadius: 8,
-                fontSize: '0.82rem',
-                fontWeight: 800,
-                textDecoration: 'none',
-                letterSpacing: '0.04em',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            <Link to={`/${data.studentId}`} className="quiz-hub-btn-desktop">
               HUB
             </Link>
           )}
@@ -367,8 +400,37 @@ export default function QuizView() {
           <h1 style={{ fontSize: 19, fontWeight: 800, color: '#71c499', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
             Conversation Assessment
           </h1>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#eaeffa', marginTop: 4 }}>
+
+          <div className="quiz-info-desktop">
             {data.studentName} • {data.date}
+          </div>
+
+          <div className="quiz-mobile-row">
+            {data.studentId && (
+              <Link
+                to={`/${data.studentId}`}
+                style={{
+                  backgroundColor: '#71c499',
+                  color: '#27427f',
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                HUB
+              </Link>
+            )}
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#eaeffa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {data.studentName} • {data.date}
+            </div>
           </div>
         </header>
 
@@ -612,49 +674,6 @@ export default function QuizView() {
             )}
           </div>
         )}
-
-        {/* 4. Homework Section */}
-        <div style={{ marginBottom: 18, marginTop: 24 }}>
-          <div style={{ backgroundColor: '#27427f', color: '#eaeffa', fontWeight: 700, fontSize: 13, textAlign: 'center', padding: '8px 14px', borderRadius: 10, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-            {homeworkTitle}
-          </div>
-
-          <div style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 14.5, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-            {!isEditing ? (
-              data.homework && data.homework.trim().length > 0 ? (
-                <div>{data.homework}</div>
-              ) : (
-                <div style={{ color: '#64748b', fontStyle: 'italic' }}>
-                  {isPt ? 'Nenhuma lição de casa registrada.' : 'No homework assigned.'}
-                </div>
-              )
-            ) : (
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#27427f', marginBottom: 6, textTransform: 'uppercase' }}>
-                  {homeworkTitle}:
-                </label>
-                <textarea
-                  rows={4}
-                  value={editData?.homework || ''}
-                  onChange={(e) => setEditData(prev => prev ? { ...prev, homework: e.target.value } : null)}
-                  placeholder={isPt ? "• Exemplo de lição..." : "• Homework item..."}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                    resize: 'vertical',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
       </div>
     </div>
   );

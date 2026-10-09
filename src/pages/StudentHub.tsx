@@ -12,6 +12,7 @@ export default function StudentHub() {
     const { studentId } = useParams<{ studentId: string }>();
     const [studentName, setStudentName] = useState<string>('');
     const [sessions, setSessions] = useState<SessionItem[]>([]);
+    const [homework, setHomework] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -36,16 +37,29 @@ export default function StudentHub() {
             const { data: sessionList, error: sessErr } = await supabase
                 .from('class_sessions')
                 .select(`
-          id,
-          class_date,
-          class_time,
-          student_quizzes!inner (id)
-        `)
+                  id,
+                  class_date,
+                  class_time,
+                  created_at,
+                  student_quizzes!inner (
+                    id,
+                    homework
+                  )
+                `)
                 .eq('student_id', studentId)
                 .order('created_at', { ascending: false });
 
             if (!sessErr && sessionList) {
                 setSessions(sessionList as unknown as SessionItem[]);
+                if (sessionList.length > 0) {
+                    const latestQuizzes = (sessionList[0] as any).student_quizzes;
+                    const latestHomework = Array.isArray(latestQuizzes)
+                        ? latestQuizzes[0]?.homework
+                        : latestQuizzes?.homework;
+                    if (latestHomework) {
+                        setHomework(latestHomework);
+                    }
+                }
             }
 
             setLoading(false);
@@ -89,7 +103,52 @@ export default function StudentHub() {
                         {studentName}
                     </div>
                 </header>
-
+                {/* Card de Lição de Casa */}
+                {homework && homework.trim().length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                        <div style={{
+                            backgroundColor: '#27427f',
+                            color: '#ffffff',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            textAlign: 'center',
+                            padding: '8px 14px',
+                            borderRadius: 10,
+                            marginBottom: 8,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.6px'
+                        }}>
+                            Homework for next class
+                        </div>
+                        <div style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: 10,
+                            borderBottom: '4px solid #27427f',
+                            padding: '16px 20px',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                            fontSize: 14.5,
+                            lineHeight: 1.6,
+                            whiteSpace: 'pre-wrap'
+                        }}>
+                            {homework}
+                        </div>
+                    </div>
+                )}
+                {/* Subtítulo Quizzes */}
+                <div style={{
+                    backgroundColor: '#27427f',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    textAlign: 'center',
+                    padding: '8px 14px',
+                    borderRadius: 10,
+                    marginBottom: 8,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.6px'
+                }}>
+                    QUIZZES
+                </div>
                 {/* Lista de Aulas e Quizzes */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {sessions.length === 0 ? (
