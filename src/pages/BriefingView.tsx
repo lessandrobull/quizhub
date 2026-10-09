@@ -364,9 +364,9 @@ export default function BriefingView() {
         <div style={{ backgroundColor: '#27427f', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, color: '#eaeffa', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           CONVERSATION ASSESSMENT
         </div>
-        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+        <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 14.5, lineHeight: 1.6 }}>
           {!isEditing ? (
-            <div style={{ whiteSpace: 'pre-wrap' }}>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
               {data.conversationAssessment || 'No conversation assessment registered.'}
             </div>
           ) : (
@@ -375,12 +375,11 @@ export default function BriefingView() {
               value={editData?.conversationAssessment || ''}
               onChange={(e) => setEditData(prev => prev ? { ...prev, conversationAssessment: e.target.value } : null)}
               placeholder="Sentence 1: Hi, Lessandro...&#10;Sentence 2: For a student at level...&#10;Sentence 3: Practical calibrating tips...&#10;Sentence 4: Behavioral & confidence tips..."
-              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: '0.95rem', lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px', borderRadius: 8, border: '1px solid #cbd5e1', backgroundColor: '#eaeffa', fontSize: 14.5, lineHeight: 1.6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
             />
           )}
         </div>
 
-        {/* Section 2: Activities & Concepts Practiced */}
         {/* Section 2: Activities & Concepts Practiced */}
         <div style={{
           backgroundColor: '#27427f',
@@ -410,7 +409,15 @@ export default function BriefingView() {
             data.activitiesDone.length > 0 ? (
               <ul style={{ paddingLeft: 20, margin: 0 }}>
                 {data.activitiesDone.map((act, i) => (
-                  <li key={i} style={{ marginBottom: 6 }}>{act}</li>
+                  <li
+                    key={i}
+                    style={{
+                      marginBottom: i === data.activitiesDone.length - 1 ? 0 : 6,
+                      lineHeight: 1.6
+                    }}
+                  >
+                    {act}
+                  </li>
                 ))}
               </ul>
             ) : (
@@ -470,15 +477,34 @@ export default function BriefingView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
           fontSize: 14.5,
-          lineHeight: 1.6,
-          whiteSpace: 'pre-wrap'
+          lineHeight: 1.6
         }}>
           {!isEditing ? (
-            <div>
-              {data.nextTasks
-                ? data.nextTasks.replace(/\n\n+/g, '\n')
-                : 'No specific next tasks scheduled.'}
-            </div>
+            (() => {
+              if (!data.nextTasks || !data.nextTasks.trim()) {
+                return <div style={{ color: '#64748b' }}>No specific next tasks scheduled.</div>;
+              }
+              const tasks = data.nextTasks
+                .split('\n')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+
+              return (
+                <div>
+                  {tasks.map((task, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        lineHeight: 1.6,
+                        marginBottom: idx === tasks.length - 1 ? 0 : 6
+                      }}
+                    >
+                      {task}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           ) : (
             <textarea
               rows={3}

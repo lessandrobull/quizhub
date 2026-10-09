@@ -127,10 +127,30 @@ export default function StudentHub() {
                             padding: '16px 20px',
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                             fontSize: 14.5,
-                            lineHeight: 1.6,
-                            whiteSpace: 'pre-wrap'
+                            lineHeight: 1.6
                         }}>
-                            {homework}
+                            {(() => {
+                                const tasks = homework
+                                    .split('\n')
+                                    .map(t => t.trim())
+                                    .filter(t => t.length > 0);
+
+                                return (
+                                    <div>
+                                        {tasks.map((task, idx) => (
+                                            <div
+                                                key={idx}
+                                                style={{
+                                                    lineHeight: 1.6,
+                                                    marginBottom: idx === tasks.length - 1 ? 0 : 6
+                                                }}
+                                            >
+                                                {task}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
@@ -150,7 +170,7 @@ export default function StudentHub() {
                     QUIZZES
                 </div>
                 {/* Lista de Aulas e Quizzes */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {sessions.length === 0 ? (
                         <div style={{
                             backgroundColor: '#ffffff',

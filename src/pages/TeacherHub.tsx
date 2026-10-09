@@ -300,6 +300,16 @@ export default function TeacherHub() {
                   gap: 10px;
                   flex-wrap: wrap;
                 }
+                .teacher-area-tag {
+                  font-size: 0.78rem;
+                  font-weight: 800;
+                  color: #27427f;
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                  line-height: 1;
+                  position: relative;
+                  top: 1px; /* <-- AJUSTE DE ALTURA NO PC: altere o número aqui (-1px, -2px, etc.) */
+                }
                 .teacher-area-sub {
                   font-size: 1.05rem;
                   font-weight: 800;
@@ -316,13 +326,16 @@ export default function TeacherHub() {
                     align-items: flex-start !important;
                     gap: 2px !important;
                   }
+                  .teacher-area-tag {
+                    top: 0 !important; /* Neutro no celular */
+                  }
                   .teacher-area-sub {
                     font-size: 0.82rem !important;
                   }
                 }
               `}</style>
               <div className="teacher-area-left">
-                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#27427f', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1 }}>
+                <span className="teacher-area-tag">
                   TEACHER AREA
                 </span>
                 <span className="teacher-area-sub">

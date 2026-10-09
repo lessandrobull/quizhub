@@ -39,6 +39,84 @@ export default function DossierView() {
   const [brainDumpText, setBrainDumpText] = useState('');
   const [savingDump, setSavingDump] = useState(false);
 
+  function formatItemLabels(text: string) {
+    if (!text) return null;
+    if (text.startsWith('No ')) {
+      return <div style={{ color: '#64748b', lineHeight: 1.6 }}>{text}</div>;
+    }
+    const lines = text
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    return (
+      <div>
+        {lines.map((line, idx) => {
+          const match = line.match(/^(\s*[-•]?\s*[^:\n]+:)(.*)$/);
+          return (
+            <div
+              key={idx}
+              style={{
+                lineHeight: 1.6,
+                marginBottom: idx === lines.length - 1 ? 0 : 6
+              }}
+            >
+              {match ? (
+                <>
+                  <strong style={{ color: '#27427f', fontWeight: 700 }}>{match[1]}</strong>
+                  {match[2]}
+                </>
+              ) : (
+                line
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function formatDates(text: string) {
+    if (!text) return null;
+    if (text.startsWith('No ')) {
+      return <div style={{ color: '#64748b', lineHeight: 1.6 }}>{text}</div>;
+    }
+    const lines = text
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    const dateRegex = /(\[[^\]\n]+\])/g;
+
+    return (
+      <div>
+        {lines.map((line, idx) => {
+          const parts = line.split(dateRegex);
+          return (
+            <div
+              key={idx}
+              style={{
+                lineHeight: 1.6,
+                marginBottom: idx === lines.length - 1 ? 0 : 6
+              }}
+            >
+              {parts.map((part, pIdx) => {
+                if (part.startsWith('[') && part.endsWith(']')) {
+                  return (
+                    <strong key={pIdx} style={{ color: '#27427f', fontWeight: 700 }}>
+                      {part}
+                    </strong>
+                  );
+                }
+                return part;
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   useEffect(() => {
     async function fetchDossier() {
       if (!studentId) return;
@@ -314,8 +392,8 @@ export default function DossierView() {
         </div>
 
         {!isCurrentlyEditing ? (
-          <div style={{ fontSize: '0.92rem', color: '#1e293b', lineHeight: 1.5, marginBottom: 10, whiteSpace: 'pre-wrap' }}>
-            {suggestionText}
+          <div style={{ fontSize: '0.92rem', color: '#1e293b', lineHeight: 1.6, marginBottom: 10 }}>
+            {key === 'routine' ? formatDates(suggestionText) : formatItemLabels(suggestionText)}
           </div>
         ) : (
           <textarea
@@ -606,11 +684,10 @@ export default function DossierView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           fontSize: '0.95rem',
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
           {!isEditing ? (
-            <div>{data.personalContext}</div>
+            formatItemLabels(data.personalContext)
           ) : (
             <textarea
               rows={4}
@@ -658,11 +735,10 @@ export default function DossierView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           fontSize: '0.95rem',
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
           {!isEditing ? (
-            <div>{data.routine}</div>
+            formatDates(data.routine)
           ) : (
             <textarea
               rows={4}
@@ -710,11 +786,10 @@ export default function DossierView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           fontSize: '0.95rem',
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
           {!isEditing ? (
-            <div>{data.learningProfile}</div>
+            formatItemLabels(data.learningProfile)
           ) : (
             <textarea
               rows={4}
@@ -762,11 +837,10 @@ export default function DossierView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           fontSize: '0.95rem',
-          whiteSpace: 'pre-wrap',
           wordBreak: 'break-word'
         }}>
           {!isEditing ? (
-            <div>{data.classHistory}</div>
+            formatItemLabels(data.classHistory)
           ) : (
             <textarea
               rows={8}
@@ -814,13 +888,9 @@ export default function DossierView() {
           marginBottom: 18,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
         }}>
-          <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-            Type free observations, quick reminders, or updates. The note will be permanently appended to the history with today's date.
-          </p>
           <textarea
             value={brainDumpText}
             onChange={(e) => setBrainDumpText(e.target.value)}
-            placeholder="e.g., Student mentioned a trip next week; reinforce structures with travel vocabulary..."
             style={{
               width: '100%',
               minHeight: 100,
