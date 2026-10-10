@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
+const APPS_SCRIPT_TRIGGER_URL = "https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec";
+
 interface PendingSuggestions {
   personal_data?: string | null;
   routine?: string | null;
@@ -117,44 +119,43 @@ export default function DossierView() {
     );
   }
 
-  useEffect(() => {
-    async function fetchDossier() {
-      if (!studentId) return;
-      setLoading(true);
+  const fetchDossierData = async () => {
+    if (!studentId) return;
 
-      const { data: record, error } = await supabase
-        .from('dossiers')
-        .select(`
-          personal_context,
-          routine,
-          learning_profile,
-          class_history,
-          pending_suggestions,
-          students (
-            name
-          )
-        `)
-        .eq('student_id', studentId)
-        .single();
+    const { data: record, error } = await supabase
+      .from('dossiers')
+      .select(`
+        personal_context,
+        routine,
+        learning_profile,
+        class_history,
+        pending_suggestions,
+        students (
+          name
+        )
+      `)
+      .eq('student_id', studentId)
+      .single();
 
-      if (!error && record) {
-        const studentInfo = record.students as any;
-        const parsed: DossierData = {
-          studentName: studentInfo?.name || 'Student',
-          studentId: studentId,
-          personalContext: record.personal_context || 'No personal data recorded.',
-          routine: record.routine || 'No routine data recorded.',
-          learningProfile: record.learning_profile || 'No learning profile recorded.',
-          classHistory: record.class_history || 'No class history recorded.',
-          pendingSuggestions: (record.pending_suggestions as PendingSuggestions) || {}
-        };
-        setData(parsed);
-        setEditData(JSON.parse(JSON.stringify(parsed)));
-      }
-      setLoading(false);
+    if (!error && record) {
+      const studentInfo = record.students as any;
+      const parsed: DossierData = {
+        studentName: studentInfo?.name || 'Student',
+        studentId: studentId,
+        personalContext: record.personal_context || 'No personal data recorded.',
+        routine: record.routine || 'No routine data recorded.',
+        learningProfile: record.learning_profile || 'No learning profile recorded.',
+        classHistory: record.class_history || 'No class history recorded.',
+        pendingSuggestions: (record.pending_suggestions as PendingSuggestions) || {}
+      };
+      setData(parsed);
+      setEditData(JSON.parse(JSON.stringify(parsed)));
     }
+  };
 
-    fetchDossier();
+  useEffect(() => {
+    setLoading(true);
+    fetchDossierData().finally(() => setLoading(false));
   }, [studentId]);
 
   // Alternância do Modo de Edição
@@ -319,30 +320,32 @@ export default function DossierView() {
   const handleSaveBrainDump = async () => {
     if (!brainDumpText.trim() || !studentId || !data) return;
     setSavingDump(true);
+    setStatusMsg({ text: 'Processing note with AI...', color: '#27427f' });
 
     try {
-      const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const newEntry = `- Manual Note (${today}): ${brainDumpText.trim()}`;
-      const currentHistory = data.classHistory && !data.classHistory.startsWith('No ') ? data.classHistory : '';
-      const updatedHistory = currentHistory ? `${currentHistory}\n\n${newEntry}` : newEntry;
+      const url = `${APPS_SCRIPT_TRIGGER_URL}?action=processBrainDump&studentId=${encodeURIComponent(studentId)}&note=${encodeURIComponent(brainDumpText.trim())}`;
+      const response = await fetch(url);
+      const result = await response.json();
 
-      const { error } = await supabase
-        .from('dossiers')
-        .update({
-          class_history: updatedHistory,
-          updated_at: new Date().toISOString()
-        })
-        .eq('student_id', studentId);
+      if (result && result.status === 'error') {
+        throw new Error(result.message || 'AI processing failed');
+      }
 
-      if (error) throw error;
+      if (result && result.action === 'merged' && result.targetStudentId) {
+        setStatusMsg({ text: 'Profile merged into official student. Redirecting...', color: '#15803d' });
+        setBrainDumpText('');
+        setTimeout(() => {
+          window.location.href = `/teacher/dossier/${result.targetStudentId}`;
+        }, 1500);
+        return;
+      }
 
-      setData(prev => prev ? { ...prev, classHistory: updatedHistory } : null);
-      setEditData(prev => prev ? { ...prev, classHistory: updatedHistory } : null);
+      await fetchDossierData();
       setBrainDumpText('');
-      setStatusMsg({ text: 'Manual note saved to history.', color: '#15803d' });
+      setStatusMsg({ text: 'Dossier updated successfully by AI.', color: '#15803d' });
       setTimeout(() => setStatusMsg(null), 4000);
     } catch (err: any) {
-      setStatusMsg({ text: 'Error saving note: ' + (err.message || 'Failed'), color: '#b91c1c' });
+      setStatusMsg({ text: 'Error processing note: ' + (err.message || 'Connection failed'), color: '#b91c1c' });
     } finally {
       setSavingDump(false);
     }
@@ -921,7 +924,7 @@ export default function DossierView() {
                 cursor: (savingDump || !brainDumpText.trim()) ? 'not-allowed' : 'pointer'
               }}
             >
-              {savingDump ? 'Saving...' : 'Save to History'}
+              {savingDump ? 'Processing...' : 'Save to History'}
             </button>
           </div>
         </div>

@@ -178,3 +178,30 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
   * Atualiza o registro no Supabase para `is_verified = true`.
   * Oculta o botão `x` da linha e desativa a ação de `ok`.
   * **Imutabilidade Absoluta:** Sessões auditadas ficam permanentemente travadas contra qualquer sobrescrita por rotinas autônomas.
+
+  ---
+
+## 9. MOTOR DO BRAIN DUMP & FUSÃO DE PERFIS (APPS SCRIPT + DOSSIER)
+
+### 9.1. Arquitetura e Rota
+- **Origem:** Campo de entrada *Brain Dump* na base do S-Dossier e T-Dossier (`src/pages/DossierView.tsx`).
+- **Endpoint:** Google Apps Script Web App (`Code.gs`) via `action=processBrainDump&studentId=[ID]&note=[TEXTO]`.
+- **Motor de Inteligência:** Cascata oficial do Gemini (`CONFIG.GEMINI_MODELS`: 3.5 -> 3-preview -> 2.5) com payload JSON restrito.
+
+### 9.2. Regras de Processamento Semântico
+1. **Triagem de Atualização de Conteúdo (Cards 1 a 4):**
+   - **Card 1 (`personal_context`):** Profissão, local de residência, interesses culturais, tecnologia, hobbies, saúde clínica crónica.
+   - **Card 2 (`routine`):** Viagens, rotina de estudos/trabalho, acontecimentos com datas ou planos futuros.
+   - **Card 3 (`learning_profile`):** Canais sensoriais, dinâmica e métodos de estudo, gatilhos emocionais/atitudinais.
+   - **Card 4 (`class_history`):** Notas históricas ou acontecimentos pedagógicos isolados de aulas.
+   - **Dado Inédito:** A IA formata no padrão visual (`- Label: Value`) e adiciona à secção correta.
+   - **Dado Incorreto / Atualização:** A IA localiza a linha desatualizada ou incorreta existente e faz a substituição pontual, mantendo todas as restantes informações do card intactas.
+   - **Padronização:** Termos informais ou em português são calibrados para o padrão formal pedagógico do ecossistema em inglês (ex.: *"ela é dentista"* -> `- Profession: Dentist`).
+
+2. **Fusão de Perfis & Reconhecimento de Contas Alternativas (Google Meet):**
+   - **Gatilho:** Notas contendo comandos como *"este perfil pertence a [Nome]"*, *"mesmo aluno que [Nome]"*, *"unir ao perfil de [Nome]"*.
+   - **Gravação de Alias:** O nome da conta temporária é gravado no Card 1 do aluno oficial como `- Meet Aliases: [Nome Alternativo]`.
+   - **Migração de Aulas:** Todas as linhas em `class_sessions` vinculadas ao ID temporário são transferidas via `PATCH` para o ID do aluno oficial.
+   - **Mesclagem de Dossiê:** O histórico de aulas do dossiê temporário é concatenado ao histórico oficial.
+   - **Expurgo do Duplicado:** As linhas do aluno temporário em `dossiers` e `students` são eliminadas.
+   - **Reconhecimento Futuro no Meet:** A rotina `resolveParticipants` do `Code.gs` consulta os aliases registados nos dossiês. Se o aluno entrar novamente em futuras aulas com essa conta, o script vincula-o diretamente ao perfil oficial, impedindo nova duplicação.
