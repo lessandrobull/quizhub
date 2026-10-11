@@ -6,6 +6,64 @@ interface SessionItem {
     id: string;
     class_date: string;
     class_time?: string;
+    created_at?: string;
+}
+
+function parseSessionDateToTime(dateStr: string, classTime?: string, createdAt?: string): number {
+    if (!dateStr) return createdAt ? new Date(createdAt).getTime() : 0;
+    const trimmed = dateStr.trim();
+
+    const monthMap: Record<string, number> = {
+        jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+        jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+    };
+
+    // 1. MMM D (ex: "Oct 6", "Sep 1")
+    const mmmDMatch = trimmed.match(/^([a-zA-Z]{3})\s+(\d{1,2})$/i);
+    if (mmmDMatch) {
+        const mKey = mmmDMatch[1].toLowerCase();
+        const mIndex = monthMap[mKey];
+        const day = parseInt(mmmDMatch[2], 10);
+        if (mIndex !== undefined) {
+            let year = new Date().getFullYear();
+            if (createdAt) {
+                const cYear = new Date(createdAt).getFullYear();
+                if (!isNaN(cYear)) year = cYear;
+            }
+            let hour = 12;
+            if (classTime) {
+                const hMatch = classTime.match(/(\d{1,2})/);
+                if (hMatch) hour = parseInt(hMatch[1], 10);
+            }
+            return new Date(year, mIndex, day, hour).getTime();
+        }
+    }
+
+    // 2. DD/MM
+    const ddMmMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (ddMmMatch) {
+        const day = parseInt(ddMmMatch[1], 10);
+        const month = parseInt(ddMmMatch[2], 10) - 1;
+        let year = new Date().getFullYear();
+        if (createdAt) {
+            const cYear = new Date(createdAt).getFullYear();
+            if (!isNaN(cYear)) year = cYear;
+        }
+        let hour = 12;
+        if (classTime) {
+            const hMatch = classTime.match(/(\d{1,2})/);
+            if (hMatch) hour = parseInt(hMatch[1], 10);
+        }
+        return new Date(year, month, day, hour).getTime();
+    }
+
+    // 3. YYYY-MM-DD
+    const ymdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+        return new Date(trimmed).getTime();
+    }
+
+    return createdAt ? new Date(createdAt).getTime() : 0;
 }
 
 export default function StudentHub() {
@@ -13,6 +71,7 @@ export default function StudentHub() {
     const [studentName, setStudentName] = useState<string>('');
     const [sessions, setSessions] = useState<SessionItem[]>([]);
     const [homework, setHomework] = useState<string>('');
+    const [isA1, setIsA1] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -33,7 +92,7 @@ export default function StudentHub() {
 
             setStudentName(student.name);
 
-            // 2. Busca sessões que já possuem quiz gerado
+            // 2. Busca sessões que já possuem quiz gerado (incluindo level para verificar idioma)
             const { data: sessionList, error: sessErr } = await supabase
                 .from('class_sessions')
                 .select(`
@@ -43,22 +102,35 @@ export default function StudentHub() {
                   created_at,
                   student_quizzes!inner (
                     id,
-                    homework
+                    homework,
+                    level
                   )
                 `)
-                .eq('student_id', studentId)
-                .order('created_at', { ascending: false });
+                .eq('student_id', studentId);
 
             if (!sessErr && sessionList) {
-                setSessions(sessionList as unknown as SessionItem[]);
-                if (sessionList.length > 0) {
-                    const latestQuizzes = (sessionList[0] as any).student_quizzes;
+                // Ordenação cronológica real decrescente
+                const sorted = [...(sessionList as any[])].sort((a, b) => {
+                    const timeB = parseSessionDateToTime(b.class_date, b.class_time, b.created_at);
+                    const timeA = parseSessionDateToTime(a.class_date, a.class_time, a.created_at);
+                    return timeB - timeA;
+                });
+
+                setSessions(sorted as unknown as SessionItem[]);
+
+                if (sorted.length > 0) {
+                    const latestQuizzes = sorted[0].student_quizzes;
                     const latestHomework = Array.isArray(latestQuizzes)
                         ? latestQuizzes[0]?.homework
                         : latestQuizzes?.homework;
                     if (latestHomework) {
                         setHomework(latestHomework);
                     }
+
+                    const latestLevel = Array.isArray(latestQuizzes)
+                        ? latestQuizzes[0]?.level
+                        : latestQuizzes?.level;
+                    setIsA1(Boolean(latestLevel && latestLevel.toUpperCase().includes('A1')));
                 }
             }
 
@@ -103,57 +175,61 @@ export default function StudentHub() {
                         {studentName}
                     </div>
                 </header>
-                {/* Card de Lição de Casa */}
-                {homework && homework.trim().length > 0 && (
-                    <div style={{ marginBottom: 20 }}>
-                        <div style={{
-                            backgroundColor: '#27427f',
-                            color: '#ffffff',
-                            fontWeight: 700,
-                            fontSize: 13,
-                            textAlign: 'center',
-                            padding: '8px 14px',
-                            borderRadius: 10,
-                            marginBottom: 8,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.6px'
-                        }}>
-                            Homework for next class
-                        </div>
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            borderRadius: 10,
-                            borderBottom: '4px solid #27427f',
-                            padding: '16px 20px',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                            fontSize: 14.5,
-                            lineHeight: 1.6
-                        }}>
-                            {(() => {
-                                const tasks = homework
-                                    .split('\n')
-                                    .map(t => t.trim())
-                                    .filter(t => t.length > 0);
 
-                                return (
-                                    <div>
-                                        {tasks.map((task, idx) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    lineHeight: 1.6,
-                                                    marginBottom: idx === tasks.length - 1 ? 0 : 6
-                                                }}
-                                            >
-                                                {task}
-                                            </div>
-                                        ))}
-                                    </div>
-                                );
-                            })()}
-                        </div>
+                {/* Card de Lição de Casa */}
+                <div style={{ marginBottom: 20 }}>
+                    <div style={{
+                        backgroundColor: '#27427f',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        textAlign: 'center',
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        marginBottom: 8,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.6px'
+                    }}>
+                        Homework for next class
                     </div>
-                )}
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: 10,
+                        borderBottom: '4px solid #27427f',
+                        padding: '16px 20px',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                        fontSize: 14.5,
+                        lineHeight: 1.6
+                    }}>
+                        {(() => {
+                            const tasks = homework && homework.trim().length > 0
+                                ? homework.split('\n').map(t => t.trim()).filter(t => t.length > 0)
+                                : [];
+
+                            return (
+                                <div>
+                                    <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
+                                        {isA1
+                                            ? '• Confira a Área de Foco e resolva o Quiz desta aula.'
+                                            : "• Review Focus Areas and complete this session's Quiz."}
+                                    </div>
+                                    {tasks.map((task, idx) => (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                lineHeight: 1.6,
+                                                marginBottom: idx === tasks.length - 1 ? 0 : 6
+                                            }}
+                                        >
+                                            {task}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+
                 {/* Subtítulo Quizzes */}
                 <div style={{
                     backgroundColor: '#27427f',
@@ -169,7 +245,8 @@ export default function StudentHub() {
                 }}>
                     QUIZZES
                 </div>
-                {/* Lista de Aulas e Quizzes */}
+
+                {/* Lista de Aulas e Quizzes (Mais recentes no topo) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {sessions.length === 0 ? (
                         <div style={{

@@ -18,6 +18,64 @@ interface ClassSessionItem {
   is_verified?: boolean;
   student_quizzes?: { level: string }[];
 }
+
+function parseSessionDateToTime(dateStr: string, classTime?: string, createdAt?: string): number {
+  if (!dateStr) return createdAt ? new Date(createdAt).getTime() : 0;
+  const trimmed = dateStr.trim();
+
+  const monthMap: Record<string, number> = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  };
+
+  // 1. MMM D (ex: "Oct 6", "Sep 1")
+  const mmmDMatch = trimmed.match(/^([a-zA-Z]{3})\s+(\d{1,2})$/i);
+  if (mmmDMatch) {
+    const mKey = mmmDMatch[1].toLowerCase();
+    const mIndex = monthMap[mKey];
+    const day = parseInt(mmmDMatch[2], 10);
+    if (mIndex !== undefined) {
+      let year = new Date().getFullYear();
+      if (createdAt) {
+        const cYear = new Date(createdAt).getFullYear();
+        if (!isNaN(cYear)) year = cYear;
+      }
+      let hour = 12;
+      if (classTime) {
+        const hMatch = classTime.match(/(\d{1,2})/);
+        if (hMatch) hour = parseInt(hMatch[1], 10);
+      }
+      return new Date(year, mIndex, day, hour).getTime();
+    }
+  }
+
+  // 2. DD/MM
+  const ddMmMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (ddMmMatch) {
+    const day = parseInt(ddMmMatch[1], 10);
+    const month = parseInt(ddMmMatch[2], 10) - 1;
+    let year = new Date().getFullYear();
+    if (createdAt) {
+      const cYear = new Date(createdAt).getFullYear();
+      if (!isNaN(cYear)) year = cYear;
+    }
+    let hour = 12;
+    if (classTime) {
+      const hMatch = classTime.match(/(\d{1,2})/);
+      if (hMatch) hour = parseInt(hMatch[1], 10);
+    }
+    return new Date(year, month, day, hour).getTime();
+  }
+
+  // 3. YYYY-MM-DD
+  const ymdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    return new Date(trimmed).getTime();
+  }
+
+  return createdAt ? new Date(createdAt).getTime() : 0;
+}
+
 function formatSessionDate(dateStr: string): string {
   if (!dateStr) return '';
   const trimmed = dateStr.trim();
@@ -67,6 +125,7 @@ function getStudentDisplayName(fullName: string, allNames: string[]): string {
 
   return firstName;
 }
+
 export default function TeacherHub() {
   const { studentId } = useParams<{ studentId: string }>();
   const [students, setStudents] = useState<Student[]>([]);
@@ -115,11 +174,16 @@ export default function TeacherHub() {
             query = query.eq('student_id', studentId);
           }
 
-          const { data: sessionList } = await query
-            .order('created_at', { ascending: false });
+          const { data: sessionList } = await query;
 
           if (sessionList) {
-            setSessions(sessionList as unknown as ClassSessionItem[]);
+            // Ordenação cronológica real decrescente
+            const sorted = [...(sessionList as any[])].sort((a, b) => {
+              const timeB = parseSessionDateToTime(b.class_date, b.class_time, b.created_at);
+              const timeA = parseSessionDateToTime(a.class_date, a.class_time, a.created_at);
+              return timeB - timeA;
+            });
+            setSessions(sorted as unknown as ClassSessionItem[]);
           }
         } else {
           setCurrentStudent(null);
@@ -308,7 +372,7 @@ export default function TeacherHub() {
                   letter-spacing: 0.05em;
                   line-height: 1;
                   position: relative;
-                  top: 1px; /* <-- AJUSTE DE ALTURA NO PC: altere o número aqui (-1px, -2px, etc.) */
+                  top: 1px;
                 }
                 .teacher-area-sub {
                   font-size: 1.05rem;
@@ -327,7 +391,7 @@ export default function TeacherHub() {
                     gap: 2px !important;
                   }
                   .teacher-area-tag {
-                    top: 0 !important; /* Neutro no celular */
+                    top: 0 !important;
                   }
                   .teacher-area-sub {
                     font-size: 0.82rem !important;
@@ -404,11 +468,48 @@ export default function TeacherHub() {
                   background-color: #eaeffa;
                   outline: none;
                 }
+                .process-submit-btn {
+                  min-width: 216px;
+                }
                 .process-btn-desktop {
                   display: inline;
                 }
                 .process-btn-mobile {
                   display: none;
+                }
+                .bouncing-dots {
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 5px;
+                  vertical-align: middle;
+                }
+                .bouncing-dots span {
+                  width: 5px;
+                  height: 5px;
+                  background-color: #ffffff;
+                  border-radius: 50%;
+                  display: inline-block;
+                  animation: bouncePulse 1.2s infinite ease-in-out both;
+                }
+                .bouncing-dots span:nth-child(1) {
+                  animation-delay: -0.32s;
+                }
+                .bouncing-dots span:nth-child(2) {
+                  animation-delay: -0.16s;
+                }
+                .bouncing-dots span:nth-child(3) {
+                  animation-delay: 0s;
+                }
+                @keyframes bouncePulse {
+                  0%, 80%, 100% {
+                    transform: scale(0.6);
+                    opacity: 0.4;
+                  }
+                  40% {
+                    transform: scale(1.2);
+                    opacity: 1;
+                  }
                 }
                 @media (max-width: 640px) {
                   .process-form {
@@ -428,6 +529,7 @@ export default function TeacherHub() {
                     font-size: 0.74rem !important;
                   }
                   .process-submit-btn {
+                    min-width: 76px !important;
                     padding: 8px 10px !important;
                     font-size: 0.75rem !important;
                   }
@@ -480,7 +582,13 @@ export default function TeacherHub() {
                     flexShrink: 0
                   }}
                 >
-                  {triggering ? '...' : (
+                  {triggering ? (
+                    <span className="bouncing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </span>
+                  ) : (
                     <>
                       <span className="process-btn-desktop">Process This Class Only</span>
                       <span className="process-btn-mobile">Process</span>
@@ -707,11 +815,7 @@ export default function TeacherHub() {
 
                   if (isTeacherView) {
                     let rawStudentName = (sess as any).students?.name || '';
-                    if (!rawStudentName && sess.student_quizzes && sess.student_quizzes.length > 0) {
-                      const lvl = sess.student_quizzes[0].level || '';
-                      const match = lvl.match(/\(([^)]+)\)/);
-                      if (match) rawStudentName = match[1];
-                    }
+                    // Extração do parênteses removida para evitar o bug do "Vantage"
                     if (rawStudentName) {
                       desktopStudentLabel = ` • ${rawStudentName}`;
                       const allNames = students.map(s => s.name);

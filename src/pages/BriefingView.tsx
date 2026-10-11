@@ -16,6 +16,13 @@ interface BriefingData {
   conversationAssessment: string;
   focusAreas: TeacherFocusArea[];
   nextTasks: string;
+  sessionLevel?: string | null;
+}
+
+function parseLevelCode(rawLevel?: string | null): string | null {
+  if (!rawLevel) return null;
+  const match = rawLevel.trim().match(/\b([ABC][12])\b/i);
+  return match ? match[1].toUpperCase() : rawLevel.trim();
 }
 
 export default function BriefingView() {
@@ -56,24 +63,18 @@ export default function BriefingView() {
 
       if (!error && record) {
         const sessionInfo = record.class_sessions as any;
-        const isTeacher = sessionInfo?.student_id === 'lessandro-bull';
-
         let resolvedStudentName = sessionInfo?.students?.name || 'Student';
+        let sessionLevel: string | null = null;
 
-        // Para sessões docentes, recupera o nome real do aluno avaliado
-        if (isTeacher) {
-          const { data: quizRecord } = await supabase
-            .from('student_quizzes')
-            .select('level')
-            .eq('session_id', sessionId)
-            .maybeSingle();
+        // Recupera o nível avaliado da sessão em student_quizzes
+        const { data: quizRecord } = await supabase
+          .from('student_quizzes')
+          .select('level')
+          .eq('session_id', sessionId)
+          .maybeSingle();
 
-          if (quizRecord?.level) {
-            const match = quizRecord.level.match(/\(([^)]+)\)/);
-            if (match && match[1]) {
-              resolvedStudentName = match[1];
-            }
-          }
+        if (quizRecord?.level) {
+          sessionLevel = parseLevelCode(quizRecord.level);
         }
 
         const parsed: BriefingData = {
@@ -83,7 +84,8 @@ export default function BriefingView() {
           activitiesDone: (record.activities_done as string[]) || [],
           conversationAssessment: record.conversation_assessment || record.diagnostic_focus || '',
           focusAreas: (record.focus_areas as TeacherFocusArea[]) || [],
-          nextTasks: record.next_tasks || ''
+          nextTasks: record.next_tasks || '',
+          sessionLevel: sessionLevel
         };
 
         setData(parsed);
@@ -111,7 +113,8 @@ export default function BriefingView() {
     setStatusMsg({ text: 'Saving changes...', color: '#27427f' });
 
     try {
-      const { error } = await supabase
+      // 1. Atualiza teacher_briefings (dados do briefing docente)
+      const { error: briefingError } = await supabase
         .from('teacher_briefings')
         .update({
           activities_done: editData.activitiesDone,
@@ -121,7 +124,17 @@ export default function BriefingView() {
         })
         .eq('session_id', sessionId);
 
-      if (error) throw error;
+      if (briefingError) throw briefingError;
+
+      // 2. Sincroniza a lição na tabela student_quizzes (exibida no Student Hub)
+      const { error: quizError } = await supabase
+        .from('student_quizzes')
+        .update({
+          homework: editData.nextTasks
+        })
+        .eq('session_id', sessionId);
+
+      if (quizError) throw quizError;
 
       setData(JSON.parse(JSON.stringify(editData)));
       setIsEditing(false);
@@ -256,6 +269,18 @@ export default function BriefingView() {
           >
             ← Back to Student Sessions
           </Link>
+
+          {data.sessionLevel && (
+            <div style={{
+              color: '#27427f',
+              fontWeight: 800,
+              fontSize: '1.15rem',
+              letterSpacing: '0.04em',
+              textAlign: 'center'
+            }}>
+              {data.sessionLevel}
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {statusMsg && (
@@ -481,16 +506,15 @@ export default function BriefingView() {
         }}>
           {!isEditing ? (
             (() => {
-              if (!data.nextTasks || !data.nextTasks.trim()) {
-                return <div style={{ color: '#64748b' }}>No specific next tasks scheduled.</div>;
-              }
-              const tasks = data.nextTasks
-                .split('\n')
-                .map(t => t.trim())
-                .filter(t => t.length > 0);
+              const tasks = data.nextTasks && data.nextTasks.trim()
+                ? data.nextTasks.split('\n').map(t => t.trim()).filter(t => t.length > 0)
+                : [];
 
               return (
                 <div>
+                  <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
+                    • Review Focus Areas and complete this session's Quiz.
+                  </div>
                   {tasks.map((task, idx) => (
                     <div
                       key={idx}

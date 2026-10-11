@@ -21,10 +21,35 @@ interface DossierData {
   pendingSuggestions: PendingSuggestions;
 }
 
+const LEVEL_MAP: Record<string, number> = {
+  A1: 1,
+  A2: 2,
+  B1: 3,
+  B2: 4,
+  C1: 5,
+  C2: 6
+};
+
+const NUM_TO_LEVEL: Record<number, string> = {
+  1: 'A1',
+  2: 'A2',
+  3: 'B1',
+  4: 'B2',
+  5: 'C1',
+  6: 'C2'
+};
+
+function parseLevelCode(rawLevel?: string | null): string | null {
+  if (!rawLevel) return null;
+  const match = rawLevel.trim().match(/\b([ABC][12])\b/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
 export default function DossierView() {
   const { studentId } = useParams<{ studentId: string }>();
   const [data, setData] = useState<DossierData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [studentLevel, setStudentLevel] = useState<string | null>(null);
 
   // Estados de Edição Editorial (Padrão QuizView)
   const [isEditing, setIsEditing] = useState(false);
@@ -119,8 +144,57 @@ export default function DossierView() {
     );
   }
 
+  const fetchStudentLevel = async (sId: string) => {
+    if (sId === 'lessandro-bull') {
+      setStudentLevel(null);
+      return;
+    }
+
+    try {
+      const { data: sessions, error } = await supabase
+        .from('class_sessions')
+        .select(`
+          id,
+          created_at,
+          student_quizzes (
+            level
+          )
+        `)
+        .eq('student_id', sId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error || !sessions) {
+        setStudentLevel(null);
+        return;
+      }
+
+      const levels: number[] = [];
+      sessions.forEach((s: any) => {
+        const sq = Array.isArray(s.student_quizzes) ? s.student_quizzes[0] : s.student_quizzes;
+        const code = parseLevelCode(sq?.level);
+        if (code && LEVEL_MAP[code]) {
+          levels.push(LEVEL_MAP[code]);
+        }
+      });
+
+      if (levels.length > 0) {
+        const sum = levels.reduce((acc, curr) => acc + curr, 0);
+        const avg = Math.round(sum / levels.length);
+        const clamped = Math.max(1, Math.min(6, avg));
+        setStudentLevel(NUM_TO_LEVEL[clamped] || null);
+      } else {
+        setStudentLevel(null);
+      }
+    } catch {
+      setStudentLevel(null);
+    }
+  };
+
   const fetchDossierData = async () => {
     if (!studentId) return;
+
+    fetchStudentLevel(studentId);
 
     const { data: record, error } = await supabase
       .from('dossiers')
@@ -596,6 +670,18 @@ export default function DossierView() {
             {isTeacherSelf ? '← Back to Classes' : '← Back to Classes'}
           </Link>
 
+          {!isTeacherSelf && studentLevel && (
+            <div style={{
+              color: '#27427f',
+              fontWeight: 800,
+              fontSize: '1.15rem',
+              letterSpacing: '0.04em',
+              textAlign: 'center'
+            }}>
+              {studentLevel}
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {statusMsg && (
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: statusMsg.color }}>
@@ -817,56 +903,60 @@ export default function DossierView() {
           {renderStagingCard('learning_profile')}
         </div>
 
-        {/* 4. CUMULATIVE CLASS HISTORY */}
-        <div style={{
-          backgroundColor: '#27427f',
-          borderRadius: 10,
-          padding: '8px 14px',
-          textAlign: 'center',
-          marginBottom: 8,
-          color: '#eaeffa',
-          fontWeight: 700,
-          fontSize: '0.88rem',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase'
-        }}>
-          4. CUMULATIVE CLASS HISTORY
-        </div>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: 10,
-          borderBottom: '4px solid #27427f',
-          padding: '16px 20px',
-          marginBottom: 18,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          fontSize: '0.95rem',
-          wordBreak: 'break-word'
-        }}>
-          {!isEditing ? (
-            formatItemLabels(data.classHistory)
-          ) : (
-            <textarea
-              rows={8}
-              value={editData?.classHistory || ''}
-              onChange={(e) => updateField('classHistory', e.target.value)}
-              style={{
-                width: '100%',
-                minHeight: 180,
-                border: '1px solid #cbd5e1',
-                borderRadius: 8,
-                padding: 12,
-                fontSize: '0.95rem',
-                color: '#1e293b',
-                resize: 'vertical',
-                backgroundColor: '#eaeffa',
-                outline: 'none',
-                boxSizing: 'border-box',
-                lineHeight: 1.5
-              }}
-            />
-          )}
-          {renderStagingCard('class_history')}
-        </div>
+        {/* 4. CUMULATIVE CLASS HISTORY (EXCLUSIVO PARA ALUNOS - OCULTO NO T-DOSSIER) */}
+        {!isTeacherSelf && (
+          <>
+            <div style={{
+              backgroundColor: '#27427f',
+              borderRadius: 10,
+              padding: '8px 14px',
+              textAlign: 'center',
+              marginBottom: 8,
+              color: '#eaeffa',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase'
+            }}>
+              4. CUMULATIVE CLASS HISTORY
+            </div>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: 10,
+              borderBottom: '4px solid #27427f',
+              padding: '16px 20px',
+              marginBottom: 18,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              fontSize: '0.95rem',
+              wordBreak: 'break-word'
+            }}>
+              {!isEditing ? (
+                formatItemLabels(data.classHistory)
+              ) : (
+                <textarea
+                  rows={8}
+                  value={editData?.classHistory || ''}
+                  onChange={(e) => updateField('classHistory', e.target.value)}
+                  style={{
+                    width: '100%',
+                    minHeight: 180,
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: '0.95rem',
+                    color: '#1e293b',
+                    resize: 'vertical',
+                    backgroundColor: '#eaeffa',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    lineHeight: 1.5
+                  }}
+                />
+              )}
+              {renderStagingCard('class_history')}
+            </div>
+          </>
+        )}
 
         {/* 5. BRAIN DUMP */}
         <div style={{
