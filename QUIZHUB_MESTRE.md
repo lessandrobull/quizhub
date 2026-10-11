@@ -152,7 +152,7 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 * **Regra de Dois Nomes:** Armazenam-se exclusivamente o Primeiro Nome e o Último Sobrenome.
 * **Reconhecimento de Speaker na Transcrição:** O motor do Apps Script utiliza expressão regular com suporte a nomes simples e compostos antes dos dois-pontos:
   `new RegExp("(^|\\n)\\s*" + targetFirst + "[^:\\n]*:", "i")` (reconhece `Amanda:`, `Amanda Cardoso:`, etc.).
-* **Saudação na Avaliação (Frase 1):** Deve conter **estritamente o primeiro nome** do aluno (ex.: `Hi, Amanda.`).
+* **Saudação na Avaliação (Frase 1):** Deve conter **estritamente o primeiro nome** do aluno. Se o nível diagnosticado for A1, inicia-se obrigatoriamente com `Olá, [Nome].`; se for A2 em diante, inicia-se com `Hi, [Nome].`
 
 ### C. Cálculo de Horários
 * Calculado somando o início da reunião no Meet com o primeiro minuto em que o aluno falou na aba `Transcript`.
@@ -321,3 +321,8 @@ Após diagnosticar a aula em um dos 6 níveis, o sistema gera o Quiz, Focus Area
 * **Captura de Vivências do Professor:** O sistema captura ativamente e salva no Staging os dados biográficos estáticos (Card 1) e episódios datados de rotina e projetos (Card 2) contados exclusivamente por Lessandro Büll na aula.
 * **Captura Metodológica:** O campo de abordagem pedagógica (Card 3) registra novas condutas e andaimes didáticos adotados pelo professor na sessão.
 * **Filtro Absoluto Anti-Contaminação:** No Backend, antes do salvamento no Supabase, qualquer sugestão para os Cards 1, 2 ou 3 do professor que contiver o nome de algum aluno cadastrado no sistema é sumariamente descartada e vetada.
+
+### 10.12. Comandos de Voz ao Vivo (Teacher Directives Override)
+* **Gatilho na Transcrição:** Se o professor verbalizar comandos diretos chamando a IA pelo nome na aula (ex.: *"Gemini, we need this point in Focus Area"*, *"Gemini, coloque isso no Quiz"*, *"Gemini, a lição de casa é..."*).
+* **Prioridade Máxima (Override):** A IA deve tratar esses comandos como mandato pedagógico absoluto, sobrescrevendo a seleção automatizada de diagnóstico.
+* **Alocação de Slots:** O item solicitado ocupará obrigatoriamente a posição #1 (Slot 1) das *Focus Areas*, a *Questão 1* do Quiz, ou a primeira linha da lição de casa (`agreedHomework`).

@@ -267,7 +267,7 @@ export default function BriefingView() {
               fontSize: '0.88rem'
             }}
           >
-            ← Back to Student Sessions
+            ← Back to Classes
           </Link>
 
           {data.sessionLevel && (
