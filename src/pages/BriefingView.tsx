@@ -520,7 +520,7 @@ export default function BriefingView() {
               return (
                 <div>
                   <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
-                    • Check Focus Areas and this session's Quiz.
+                    • Check Focus Areas and the Quiz.
                   </div>
                   {tasks.map((task, idx) => (
                     <div
