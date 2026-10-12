@@ -749,7 +749,6 @@ export default function TeacherHub() {
                 {!isTeacherView && (
                   <Link
                     to={`/${studentId}`}
-                    target="_blank"
                     className="student-nav-btn-hub"
                   >
                     STUDENT HUB
@@ -933,7 +932,6 @@ export default function TeacherHub() {
                         </Link>
                         <Link
                           to={`/quiz/${sess.id}`}
-                          target="_blank"
                           style={{
                             backgroundColor: '#71c499',
                             color: '#27427f',

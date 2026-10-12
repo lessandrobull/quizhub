@@ -232,8 +232,8 @@ export default function StudentHub() {
                                 <div>
                                     <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
                                         {isA1
-                                            ? '• Confira a Área de Foco e resolva o Quiz desta aula.'
-                                            : "• Review Focus Areas and complete this session's Quiz."}
+                                            ? '• Confira a Área de Foco e o Quiz.'
+                                            : "• Check Focus Areas and the Quiz."}
                                     </div>
                                     {tasks.map((task, idx) => (
                                         <div
