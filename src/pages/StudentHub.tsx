@@ -142,7 +142,7 @@ export default function StudentHub() {
 
     if (loading) {
         return (
-            <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+            <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
                 Carregando quizzes...
             </div>
         );
@@ -150,14 +150,14 @@ export default function StudentHub() {
 
     if (!studentName) {
         return (
-            <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+            <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
                 Aluno não encontrado.
             </div>
         );
     }
 
     return (
-        <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
+        <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
             <div style={{ maxWidth: 680, margin: '0 auto' }}>
                 {/* Banner do Aluno - Padronizado com Student Sessions */}
                 <div

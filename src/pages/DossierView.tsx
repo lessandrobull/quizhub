@@ -427,7 +427,7 @@ export default function DossierView() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading Dossier...
       </div>
     );
@@ -435,7 +435,7 @@ export default function DossierView() {
 
   if (!data) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
         Dossier not found.
       </div>
     );
@@ -597,7 +597,7 @@ export default function DossierView() {
 
   return (
     <div style={{
-      backgroundColor: '#9a9fd6',
+      backgroundColor: '#acc1d8',
       minHeight: '100vh',
       padding: '24px 16px 48px',
       color: '#1e293b',

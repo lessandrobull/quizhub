@@ -190,7 +190,7 @@ export default function BriefingView() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading Briefing...
       </div>
     );
@@ -198,14 +198,14 @@ export default function BriefingView() {
 
   if (!data) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
         Briefing not found for this session.
       </div>
     );
   }
 
   return (
-    <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
+    <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
         {/* 1. Main Banner */}

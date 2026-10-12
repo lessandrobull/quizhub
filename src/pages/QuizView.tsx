@@ -177,7 +177,7 @@ export default function QuizView() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading assessment...
       </div>
     );
@@ -185,7 +185,7 @@ export default function QuizView() {
 
   if (!data) {
     return (
-      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
         Quiz not found for this session.
       </div>
     );
@@ -207,7 +207,7 @@ export default function QuizView() {
 
   return (
     <div style={{
-      backgroundColor: '#9a9fd6',
+      backgroundColor: '#acc1d8',
       minHeight: '100vh',
       padding: isTeacherRoute ? '24px 16px 48px' : '24px 16px 40px 14px',
       color: '#1e293b'
