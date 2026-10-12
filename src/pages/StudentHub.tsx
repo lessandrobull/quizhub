@@ -185,7 +185,7 @@ export default function StudentHub() {
                                 padding: 14px 10px !important;
                             }
                             .student-banner-title {
-                                font-size: 0.90rem !important;
+                                font-size: 1rem !important;
                                 letter-spacing: 0.02em !important;
                             }
                         }
@@ -268,13 +268,30 @@ export default function StudentHub() {
                     QUIZZES
                 </div>
 
-                {/* Lista de Aulas e Quizzes (Mais recentes no topo) */}
+                {/* Lista de Aulas e Quizzes (Padronizado com TeacherHub Sessions) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <style>{`
+                        .student-session-card {
+                            padding: 16px 20px;
+                        }
+                        .student-session-title {
+                            font-size: 1rem;
+                        }
+                        @media (max-width: 640px) {
+                            .student-session-card {
+                                padding: 12px 14px !important;
+                            }
+                            .student-session-title {
+                                font-size: 0.92rem !important;
+                            }
+                        }
+                    `}</style>
+
                     {sessions.length === 0 ? (
                         <div style={{
                             backgroundColor: '#ffffff',
                             padding: 24,
-                            borderRadius: 12,
+                            borderRadius: 10,
                             textAlign: 'center',
                             fontWeight: 600,
                             color: '#475569',
@@ -287,31 +304,35 @@ export default function StudentHub() {
                             <Link
                                 key={sess.id}
                                 to={`/quiz/${sess.id}`}
+                                className="student-session-card"
                                 style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
                                     backgroundColor: '#ffffff',
-                                    padding: '18px 20px',
-                                    borderRadius: 12,
+                                    borderRadius: 10,
                                     textDecoration: 'none',
                                     color: '#1e293b',
                                     fontWeight: 700,
-                                    fontSize: 15,
                                     borderBottom: '4px solid #27427f',
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                    gap: 8,
                                     transition: 'transform 0.1s ease'
                                 }}
                             >
-                                <span>Quiz • {sess.class_date}</span>
+                                <span className="student-session-title">
+                                    Quiz • {sess.class_date}
+                                </span>
                                 <span style={{
-                                    backgroundColor: '#27427f',
-                                    color: '#eaeffa',
-                                    padding: '6px 14px',
+                                    backgroundColor: '#71c499',
+                                    color: '#27427f',
+                                    padding: '6px 12px',
                                     borderRadius: 8,
-                                    fontSize: 13,
+                                    fontSize: '0.78rem',
                                     fontWeight: 700,
-                                    textTransform: 'uppercase'
+                                    textTransform: 'uppercase',
+                                    whiteSpace: 'nowrap',
+                                    flexShrink: 0
                                 }}>
                                     Open
                                 </span>
