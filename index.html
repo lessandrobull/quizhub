@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QuizHub</title>
+    <title>quizhub</title>
 
     <!-- Ícone da aba no computador -->
     <link rel="icon" type="image/png" href="/icon-64.png" />
 
-    <!-- Ícone oficial para iPhone / iPad (Safari) -->
+    <!-- Ícone para tela de início no iOS / Safari -->
     <link rel="apple-touch-icon" href="/icon-180.png" />
 
-    <!-- Manifesto e configurações para virar App (PWA) no celular -->
+    <!-- Manifesto e parâmetros PWA para Android / Chrome -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#27427f" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -22,5 +22,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Registro obrigatório do Service Worker para desbloquear o WebAPK / modo standalone -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
   </body>
 </html>
