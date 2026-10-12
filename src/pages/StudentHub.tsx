@@ -142,7 +142,7 @@ export default function StudentHub() {
 
     if (loading) {
         return (
-            <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+            <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
                 Carregando quizzes...
             </div>
         );
@@ -150,31 +150,53 @@ export default function StudentHub() {
 
     if (!studentName) {
         return (
-            <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+            <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '40px 16px', textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
                 Aluno não encontrado.
             </div>
         );
     }
 
     return (
-        <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
+        <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
             <div style={{ maxWidth: 680, margin: '0 auto' }}>
-                {/* Banner do Aluno */}
-                <header style={{
-                    backgroundColor: '#27427f',
-                    borderRadius: 18,
-                    padding: '20px 16px',
-                    textAlign: 'center',
-                    marginBottom: 20,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-                }}>
-                    <h1 style={{ fontSize: 20, fontWeight: 800, color: '#71c499', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                {/* Banner do Aluno - Padronizado com Student Sessions */}
+                <div
+                    className="student-main-banner"
+                    style={{
+                        backgroundColor: '#27427f',
+                        borderRadius: 18,
+                        padding: '16px 20px',
+                        textAlign: 'center',
+                        marginBottom: 16,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                    }}
+                >
+                    <style>{`
+                        .student-banner-title {
+                            color: #71c499;
+                            font-size: 1.15rem;
+                            font-weight: 800;
+                            letter-spacing: 0.06em;
+                            text-transform: uppercase;
+                            white-space: nowrap;
+                        }
+                        @media (max-width: 640px) {
+                            .student-main-banner {
+                                padding: 14px 10px !important;
+                            }
+                            .student-banner-title {
+                                font-size: 0.90rem !important;
+                                letter-spacing: 0.02em !important;
+                            }
+                        }
+                    `}</style>
+                    <div className="student-banner-title">
                         QUIZHUB
-                    </h1>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#eaeffa', marginTop: 6 }}>
+                    </div>
+                    <div style={{ color: '#eaeffa', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>
                         {studentName}
                     </div>
-                </header>
+                </div>
 
                 {/* Card de Lição de Casa */}
                 <div style={{ marginBottom: 20 }}>

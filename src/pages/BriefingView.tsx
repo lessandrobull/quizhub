@@ -190,7 +190,7 @@ export default function BriefingView() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading Briefing...
       </div>
     );
@@ -198,14 +198,14 @@ export default function BriefingView() {
 
   if (!data) {
     return (
-      <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
         Briefing not found for this session.
       </div>
     );
   }
 
   return (
-    <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
+    <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b' }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
         {/* 1. Main Banner */}
@@ -391,7 +391,14 @@ export default function BriefingView() {
         </div>
         <div style={{ background: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '16px 20px', marginBottom: 18, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 14.5, lineHeight: 1.6 }}>
           {!isEditing ? (
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+            <div style={{
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.6,
+              textAlign: 'justify',
+              textJustify: 'inter-word',
+              hyphens: 'auto',
+              WebkitHyphens: 'auto'
+            }}>
               {data.conversationAssessment || 'No conversation assessment registered.'}
             </div>
           ) : (
@@ -562,7 +569,17 @@ export default function BriefingView() {
                 <div key={i} style={{ backgroundColor: '#ffffff', borderRadius: 10, borderBottom: '4px solid #27427f', padding: '14px 16px', marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                   <div style={{ color: '#b91c1c', fontWeight: 600, fontSize: '0.95rem', marginBottom: 4 }}>{fa.studentSaid}</div>
                   <div style={{ color: '#0b5394', fontWeight: 700, fontSize: '1rem', marginBottom: 10 }}>{fa.betterWay}</div>
-                  <div style={{ backgroundColor: '#eaeffa', borderRadius: 8, padding: '10px 12px', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  <div style={{
+                    backgroundColor: '#eaeffa',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: '0.9rem',
+                    lineHeight: 1.5,
+                    textAlign: 'justify',
+                    textJustify: 'inter-word',
+                    hyphens: 'auto',
+                    WebkitHyphens: 'auto'
+                  }}>
                     <strong style={{ color: '#27427f' }}>Explanation:</strong> {fa.explanation}
                   </div>
                 </div>

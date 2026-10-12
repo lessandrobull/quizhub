@@ -277,7 +277,7 @@ export default function TeacherHub() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading pedagogical dashboard...
       </div>
     );
@@ -288,7 +288,7 @@ export default function TeacherHub() {
 
   return (
     <div style={{
-      backgroundColor: '#a6b1ca',
+      backgroundColor: '#9a9fd6',
       minHeight: '100vh',
       padding: '24px 16px 48px',
       color: '#1e293b'
@@ -856,7 +856,7 @@ export default function TeacherHub() {
                             title={isVerified ? "Audited and locked" : "Mark as audited and lock"}
                             style={{
                               backgroundColor: '#ffffff',
-                              color: isVerified ? '#71c499' : '#a6b1ca',
+                              color: isVerified ? '#71c499' : '#9a9fd6',
                               border: 'none',
                               padding: '2px 4px',
                               borderRadius: 4,
@@ -878,7 +878,7 @@ export default function TeacherHub() {
                               title="Delete class session completely"
                               style={{
                                 backgroundColor: '#ffffff',
-                                color: '#a6b1ca',
+                                color: '#9a9fd6',
                                 border: 'none',
                                 padding: '2px 4px',
                                 borderRadius: 4,

@@ -177,7 +177,7 @@ export default function QuizView() {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
         Loading assessment...
       </div>
     );
@@ -185,7 +185,7 @@ export default function QuizView() {
 
   if (!data) {
     return (
-      <div style={{ backgroundColor: '#a6b1ca', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
+      <div style={{ backgroundColor: '#9a9fd6', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#b91c1c', fontWeight: 'bold' }}>
         Quiz not found for this session.
       </div>
     );
@@ -207,24 +207,46 @@ export default function QuizView() {
 
   return (
     <div style={{
-      backgroundColor: '#a6b1ca',
+      backgroundColor: '#9a9fd6',
       minHeight: '100vh',
-      padding: isTeacherRoute ? '24px 16px 48px' : '12px 14px 40px 14px',
+      padding: isTeacherRoute ? '24px 16px 48px' : '24px 16px 40px 14px',
       color: '#1e293b'
     }}>
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
 
         {/* ADMIN ONLY: Card 1 - Main Banner */}
         {isTeacherRoute && (
-          <div style={{
-            backgroundColor: '#27427f',
-            borderRadius: 18,
-            padding: '16px 20px',
-            textAlign: 'center',
-            marginBottom: 16,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-          }}>
-            <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <div
+            className="quiz-admin-main-banner"
+            style={{
+              backgroundColor: '#27427f',
+              borderRadius: 18,
+              padding: '16px 20px',
+              textAlign: 'center',
+              marginBottom: 16,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}
+          >
+            <style>{`
+              .quiz-admin-banner-title {
+                color: #71c499;
+                font-size: 1.15rem;
+                font-weight: 800;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                white-space: nowrap;
+              }
+              @media (max-width: 640px) {
+                .quiz-admin-main-banner {
+                  padding: 14px 10px !important;
+                }
+                .quiz-admin-banner-title {
+                  font-size: 0.80rem !important;
+                  letter-spacing: 0.02em !important;
+                }
+              }
+            `}</style>
+            <div className="quiz-admin-banner-title">
               PEDAGOGICAL DASHBOARD • QUIZ
             </div>
           </div>
@@ -397,7 +419,7 @@ export default function QuizView() {
             </Link>
           )}
 
-          <h1 style={{ fontSize: 19, fontWeight: 800, color: '#71c499', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+          <h1 style={{ fontSize: 14, fontWeight: 800, color: '#71c499', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
             Conversation Assessment
           </h1>
 
@@ -428,7 +450,7 @@ export default function QuizView() {
                 HUB
               </Link>
             )}
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#eaeffa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#eaeffa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {data.studentName} • {data.date}
             </div>
           </div>
@@ -440,7 +462,19 @@ export default function QuizView() {
             {levelLabel}
           </div>
 
-          <div style={{ backgroundColor: '#ffffff', padding: 16, borderRadius: 10, borderBottom: '4px solid #27427f', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', fontSize: 14.5, lineHeight: 1.6 }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            padding: 16,
+            borderRadius: 10,
+            borderBottom: '4px solid #27427f',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            fontSize: 14.5,
+            lineHeight: 1.6,
+            textAlign: 'justify',
+            textJustify: 'inter-word',
+            hyphens: 'auto',
+            WebkitHyphens: 'auto'
+          }}>
             {!isEditing ? (
               data.levelDescription
             ) : (
@@ -482,7 +516,13 @@ export default function QuizView() {
                   <div style={{ color: '#b91c1c', fontWeight: 600, fontSize: 14.5, marginBottom: 4 }}>{fa.studentSaid}</div>
                   <div style={{ color: '#0b5394', fontWeight: 700, fontSize: 15, marginBottom: 10 }}>{fa.betterWay}</div>
                   <div style={{ backgroundColor: '#eaeffa', borderRadius: 8, padding: '10px 12px', fontSize: 13.5, lineHeight: 1.5 }}>
-                    <div style={{ marginBottom: 8 }}>
+                    <div style={{
+                      marginBottom: 8,
+                      textAlign: 'justify',
+                      textJustify: 'inter-word',
+                      hyphens: 'auto',
+                      WebkitHyphens: 'auto'
+                    }}>
                       <strong style={{ color: '#27427f' }}>{expLabel}</strong> {fa.explanation}
                     </div>
                     {fa.examples && fa.examples.length > 0 && (
@@ -609,7 +649,18 @@ export default function QuizView() {
                     </div>
 
                     {isAnswered && (
-                      <div style={{ marginTop: 10, padding: '10px 12px', backgroundColor: '#eaeffa', borderRadius: 8, fontSize: 13.5, lineHeight: 1.5 }}>
+                      <div style={{
+                        marginTop: 10,
+                        padding: '10px 12px',
+                        backgroundColor: '#eaeffa',
+                        borderRadius: 8,
+                        fontSize: 13.5,
+                        lineHeight: 1.5,
+                        textAlign: 'justify',
+                        textJustify: 'inter-word',
+                        hyphens: 'auto',
+                        WebkitHyphens: 'auto'
+                      }}>
                         <strong style={{ color: '#27427f' }}>{expLabel}</strong> {item.explanation}
                       </div>
                     )}
