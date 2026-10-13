@@ -72,6 +72,7 @@ export default function StudentHub() {
     const [sessions, setSessions] = useState<SessionItem[]>([]);
     const [homework, setHomework] = useState<string>('');
     const [isA1, setIsA1] = useState(false);
+    const [rollingLevel, setRollingLevel] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -131,6 +132,30 @@ export default function StudentHub() {
                         ? latestQuizzes[0]?.level
                         : latestQuizzes?.level;
                     setIsA1(Boolean(latestLevel && latestLevel.toUpperCase().includes('A1')));
+
+                    // Calcula a média móvel oficial das últimas 10 aulas do aluno
+                    const levelMap: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6 };
+                    const numToLevel: Record<number, string> = { 1: 'A1', 2: 'A2', 3: 'B1', 4: 'B2', 5: 'C1', 6: 'C2' };
+                    const values: number[] = [];
+
+                    sorted.slice(0, 10).forEach((s: any) => {
+                        const sq = Array.isArray(s.student_quizzes) ? s.student_quizzes[0] : s.student_quizzes;
+                        if (sq?.level) {
+                            const match = sq.level.match(/\b([ABC][12])\b/i);
+                            if (match) {
+                                const code = match[1].toUpperCase();
+                                if (levelMap[code]) values.push(levelMap[code]);
+                            }
+                        }
+                    });
+
+                    if (values.length > 0) {
+                        const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+                        const clamped = Math.max(1, Math.min(6, avg));
+                        const calculatedAvg = numToLevel[clamped] || null;
+                        setRollingLevel(calculatedAvg);
+                        setIsA1(Boolean(calculatedAvg && calculatedAvg.toUpperCase().includes('A1')));
+                    }
                 }
             }
 
@@ -194,7 +219,7 @@ export default function StudentHub() {
                         QUIZHUB
                     </div>
                     <div style={{ color: '#eaeffa', fontSize: '1rem', fontWeight: 700, marginTop: 4 }}>
-                        {studentName}
+                        {studentName}{rollingLevel ? ` • ${rollingLevel}` : ''}
                     </div>
                 </div>
 

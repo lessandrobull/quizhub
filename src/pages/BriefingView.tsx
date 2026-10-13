@@ -12,6 +12,7 @@ interface BriefingData {
   studentName: string;
   studentId: string;
   date: string;
+  time: string;
   activitiesDone: string[];
   conversationAssessment: string;
   focusAreas: TeacherFocusArea[];
@@ -52,6 +53,7 @@ export default function BriefingView() {
           class_sessions (
             id,
             class_date,
+            class_time,
             student_id,
             students (
               name
@@ -81,6 +83,7 @@ export default function BriefingView() {
           studentName: resolvedStudentName,
           studentId: sessionInfo?.student_id || '',
           date: sessionInfo?.class_date || '',
+          time: sessionInfo?.class_time || '',
           activitiesDone: (record.activities_done as string[]) || [],
           conversationAssessment: record.conversation_assessment || record.diagnostic_focus || '',
           focusAreas: (record.focus_areas as TeacherFocusArea[]) || [],
@@ -135,6 +138,17 @@ export default function BriefingView() {
         .eq('session_id', sessionId);
 
       if (quizError) throw quizError;
+
+      // 3. Atualiza data e horário na tabela class_sessions
+      const { error: sessionError } = await supabase
+        .from('class_sessions')
+        .update({
+          class_date: editData.date,
+          class_time: editData.time
+        })
+        .eq('id', sessionId);
+
+      if (sessionError) throw sessionError;
 
       setData(JSON.parse(JSON.stringify(editData)));
       setIsEditing(false);
@@ -363,9 +377,53 @@ export default function BriefingView() {
           flexWrap: 'wrap',
           gap: 10
         }}>
-          <span style={{ color: '#eaeffa', fontSize: '1.05rem', fontWeight: 700 }}>
-            {data.studentName} &bull; {data.date}
-          </span>
+          {!isEditing ? (
+            <span style={{ color: '#eaeffa', fontSize: '1.05rem', fontWeight: 700 }}>
+              {data.studentName} &bull; {data.date}{data.time ? ` ${data.time}` : ''}
+            </span>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ color: '#eaeffa', fontSize: '1.05rem', fontWeight: 700 }}>
+                {editData?.studentName} &bull;
+              </span>
+              <input
+                type="text"
+                value={editData?.date || ''}
+                onChange={(e) => setEditData(prev => prev ? { ...prev, date: e.target.value } : null)}
+                placeholder="Date (e.g. Oct 6)"
+                title="Class Date"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#1e293b',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  width: 95,
+                  outline: 'none'
+                }}
+              />
+              <input
+                type="text"
+                value={editData?.time || ''}
+                onChange={(e) => setEditData(prev => prev ? { ...prev, time: e.target.value } : null)}
+                placeholder="Time (e.g. 21h)"
+                title="Class Time"
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#1e293b',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  width: 65,
+                  outline: 'none'
+                }}
+              />
+            </div>
+          )}
           <div>
             <Link
               to={`/teacher/quiz/${sessionId}`}
