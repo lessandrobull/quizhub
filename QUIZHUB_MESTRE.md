@@ -95,7 +95,7 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
     3. Sugestões de Dossiê do aluno (Staging com Cards 1, 2, 3 e 4 com acúmulo contínuo).
     4. Sugestões docentes restritas (Apenas metodologia inédita para o Card 3 do professor, quando houver; demais cards sempre nulos).
 * **Limites de Processamento:**
-  * **Gatilho Autônomo (Time-driven a cada 30 min):** Processa com teto de **no máximo 2 aulas por ciclo**.
+  * **Gatilho Autônomo (Time-driven a cada 30 min):** Processa com teto de **no máximo 1 aula por ciclo**.
   * **Lote Histórico Manual:** Teto máximo de **8 aulas por pacote**.
   * **Disparo Pontual na Interface:** O professor seleciona `[Aluno]` + `[Data]` e aciona `Process This Class Only` (chamada via Web App, consumindo exatamente 1 requisição).
 * **Blindagem de Arquivos Pendentes:** Se qualquer aluno de uma gravação falhar ou ainda houver outro aluno pendente de processamento no mesmo arquivo, o Google Docs **NÃO pode ser movido** para `Google Meet - Processadas`.
@@ -229,7 +229,7 @@ Este documento é a fonte suprema da verdade para o desenvolvimento, manutençã
 - **Fórmula de Cálculo:** O nível de proficiência é a média aritmética arredondada das avaliações das últimas sessões registradas em `class_sessions` / `student_quizzes` (mapeadas numericamente de 1 a 6: A1=1, A2=2, B1=3, B2=4, C1=5, C2=6).
 - **Janela Restrita:** Ao atingir 10 ou mais aulas, descarta-se o histórico anterior além da 10ª aula mais recente (cálculo fixo nas últimas 10 sessões).
 - **Exibição Visual (S-Dossier):** Exibido exclusivamente no dossiê de alunos (`!isTeacherSelf`), centralizado no card branco superior entre os botões `← Back to Classes` e `EDIT CONTENT`, em negrito e azul escuro (`#27427f`).
-- **Injeção no Backend:** O nível consolidado é passado como parâmetro balizador (`STUDENT HISTORICAL BASELINE LEVEL`) no prompt de análise pedagógica do Gemini.
+- **Injeção no Backend:** O nível consolidado é passado como parâmetro balizador (`STUDENT 10-SESSION ROLLING AVERAGE (OPERATIONAL LEVEL)`) no prompt de análise pedagógica do Gemini.
 
 ### 10.2. Os 4 Modos de Fala da Transcrição
 A análise divide o texto da sessão em 4 modalidades distintas:
