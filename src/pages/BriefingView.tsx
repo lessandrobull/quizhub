@@ -575,11 +575,12 @@ export default function BriefingView() {
                 ? data.nextTasks.split('\n').map(t => t.trim()).filter(t => t.length > 0)
                 : [];
 
+              if (tasks.length === 0) {
+                return <p style={{ color: '#64748b', margin: 0 }}>No tasks agreed.</p>;
+              }
+
               return (
                 <div>
-                  <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
-                    • Check Focus Areas and the Quiz.
-                  </div>
                   {tasks.map((task, idx) => (
                     <div
                       key={idx}

@@ -931,7 +931,7 @@ export default function TeacherHub() {
                           BRIEFING
                         </Link>
                         <Link
-                          to={`/quiz/${sess.id}`}
+                          to={`/teacher/quiz/${sess.id}`}
                           style={{
                             backgroundColor: '#71c499',
                             color: '#27427f',

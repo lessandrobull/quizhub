@@ -253,13 +253,16 @@ export default function StudentHub() {
                                 ? homework.split('\n').map(t => t.trim()).filter(t => t.length > 0)
                                 : [];
 
+                            if (tasks.length === 0) {
+                                return (
+                                    <p style={{ color: '#64748b', margin: 0 }}>
+                                        {isA1 ? 'Nenhuma lição atribuída para a próxima aula.' : 'No homework assigned for next class.'}
+                                    </p>
+                                );
+                            }
+
                             return (
                                 <div>
-                                    <div style={{ lineHeight: 1.6, marginBottom: tasks.length > 0 ? 6 : 0 }}>
-                                        {isA1
-                                            ? '• Conferir a Área de Foco e o Quiz.'
-                                            : "• Check Focus Areas and the Quiz."}
-                                    </div>
                                     {tasks.map((task, idx) => (
                                         <div
                                             key={idx}

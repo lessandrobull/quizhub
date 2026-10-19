@@ -28,3 +28,9 @@ yarn-error.log*
 *.sln
 *.sw?
 Code.gs
+
+# Backups locais
+backup_target_classes.json
+
+# Scripts utilitarios locais
+scripts/
