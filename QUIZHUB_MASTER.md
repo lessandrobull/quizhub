@@ -31,7 +31,13 @@ O **QuizHub** é um Progressive Web App (PWA) de **gestão pedagógica, acompanh
 Esta seção documenta as dependências que residem fora do repositório local e que o código-fonte por si só não explica completamente:
 
 ### A. Banco de Dados Relacional (Supabase BaaS)
-- **Instância:** `[https://xttzilpuuqjbztjkeadd.supabase.co](https://xttzilpuuqjbztjkeadd.supabase.co)`
+- **Instância:** `https://xttzilpuuqjbztjkeadd.supabase.co`
+- **Autenticação & Controle de Acesso:**
+  - **Sessão Docente:** Proteção exclusiva das rotas docentes com o componente `TeacherGuard.tsx`. Sessão criptografada persistida no `localStorage` do navegador para evitar logins repetitivos.
+  - **Acesso Público sem Fricção aos Alunos:** Rotas de alunos (`/:studentId` e `/quiz/:sessionId`) são externas ao guardião e não exigem login.
+  - **Políticas de Row Level Security (RLS):**
+    - Tabelas Privadas (`dossiers`, `teacher_briefings`): Acesso estritamente restrito a conexões com sessão de professor (`auth.role() = 'authenticated'`).
+    - Tabelas Compartilhadas (`students`, `class_sessions`, `student_quizzes`): Leitura pública liberada (`SELECT` para `anon` e `authenticated`), garantindo que os alunos consigam carregar e responder seus quizzes sem autenticação. Gravação, edição e exclusão restritas ao professor (`authenticated`) e à chave mestre `service_role`.
 - **Schema e Tabelas:**
   - `students`: Cadastro de alunos por slug normalizado (`id`) e nome completo em Title Case estrito (`name`).
   - `class_sessions`: Registro de cada aula associada ao aluno, contendo data formatada (`class_date`), horário de início truncado (`class_time`), flag de auditoria/imutabilidade (`is_verified`) e carimbo de criação (`created_at`).
@@ -42,7 +48,7 @@ Esta seção documenta as dependências que residem fora do repositório local e
 
 ### B. Backend Serverless e Motor de IA (Google Apps Script Web App)
 - **Endpoint Web App (`Code.gs`):**
-  `[https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec](https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec)`
+  `https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec`
 - **Blindagem e Governança:** O arquivo `Code.gs` roda na nuvem do Google e é mantido no `.gitignore` para proteção contra vazamento de credenciais GCP e Supabase. Toda e qualquer alteração no código do Apps Script exige a publicação de uma **Nova versão** em *Gerenciar implantações* para ter efeito no Web App.
 - **Rotas do Endpoint (`doGet`):**
   1. `action=processBrainDump`: Processa semanticamente notas do professor para atualizar os cards do dossiê ou executar comandos de fusão de perfis e registro de aliases (`- Meet Aliases:`).

@@ -22,6 +22,7 @@ Snapshot técnico gerado automaticamente com a estrutura e código da plataforma
 ./src/assets/hero.png
 ./src/assets/react.svg
 ./src/assets/vite.svg
+./src/components/TeacherGuard.tsx
 ./src/index.css
 ./src/lib/supabase.ts
 ./src/main.tsx
@@ -905,10 +906,11 @@ SECTION 7: 70/30 CONTEXT COEXISTENCE & SUBJECT VARIETY
 2. The Student's Dossier (profession, residence, hobbies, routine) is the PERSONAL SEASONING (approx. 30% of focus examples and quiz scenarios).
 - Prohibited: Do NOT invent generic airport, corporate executive, or international flight contexts for students who do not have that profile. Balance class theme (70%) and student identity (30%).
 
-STRICT PROHIBITION ON REPETITIVE SUBJECTS:
+STRICT PROHIBITION ON REPETITIVE SUBJECTS & STUDENT NAME:
 - Across all 3 examples of EVERY focus area, and across ALL questions and answer options of the Quiz, you MUST vary the grammatical subjects and pronouns.
-- Strictly forbidden: Do NOT use the same subject pronoun (e.g., repeatedly using "I", "She", or "They") or the student's name across all 3 examples of an item.
-- Always distribute diverse subjects: combine third-person singular (he, she, my friend, the teacher), plural subjects (we, they, the doctors), and situational noun phrases.
+- Strictly forbidden: Do NOT use the same subject pronoun (e.g., repeatedly using "I", "She", or "They") across examples or questions.
+- STUDENT NAME RESTRICTION: The student's name (or possessive form, e.g., "${studentFirstName}", "${studentFirstName}'s") is STRICTLY PROHIBITED from being used repeatedly. Across the entire Quiz (all 10 questions), the student's name may appear at most ONCE (maximum 1 question), or be completely omitted in favor of generic third-person subjects (e.g., "A traveler", "My friend", "The teacher", "Her nephew", "They", "We").
+- Always distribute diverse subjects: combine third-person singular (he, she, my friend, the visitor), plural subjects (we, they, the students), and situational noun phrases.
 
 ================================================================================
 SECTION 8: ACTIVE VOCABULARY TRIGGER & CEILING
@@ -948,6 +950,9 @@ STRICT INTEGRITY RULES FOR EVERY QUESTION:
    - The correct answer MUST be randomly and evenly distributed across all 5 letters across the 10 questions (approximately 2 questions for each letter: A, B, C, D, and E).
    - STRICT PROHIBITION: You are strictly forbidden from placing the correct answer in the same letter option (such as all or mostly 'A') across questions.
    - For every question, you MUST shuffle the order of the options so that the position of the correct answer varies unpredictably across A, B, C, D, and E.
+6. STRICT PROHIBITION ON REPEATING STUDENT NAME IN QUIZ:
+   - Do NOT frame multiple questions around the student's name (e.g., "${studentFirstName} did...", "${studentFirstName}'s family...").
+   - Maximum 1 occurrence of the student's name across all 10 questions combined. Frame scenarios using diverse subjects and general contexts.
 
 ================================================================================
 SECTION 10: AGREED HOMEWORK (STRICT EXTRACTION ONLY)
@@ -981,7 +986,9 @@ OUTPUT REQUIREMENTS:
      * Scenario A (When Drills or Repetitions Occurred): Select the TWO specific phrases or structures where Teacher Lessandro stopped to coach pronunciation or syntax and the student successfully repeated and adjusted them with noticeable improvement in rhythm, pronunciation, and confidence (e.g., in Portuguese: "Você se dedicou muito e mostrou uma evolução nítida ao acertar a estrutura de '[Phrase 1]' e ao pronunciar '[Phrase 2]' com muito mais segurança."; in English: "You showed great dedication and clear progress when you mastered the structure of '[Phrase 1]' and spoke '[Phrase 2]' with much smoother confidence.").
      * Scenario B (Autonomous Flow / No Repeated Drills Needed): If the student maintained high communicative flow without requiring intensive teacher drills, select TWO grammatically sound, natural phrases actually verbalized by the student that reflect solid command of their CEFR level, praising their spontaneous accuracy and clear discourse (e.g., in Portuguese: "Sua fala fluiu com muita naturalidade, destacando-se pelo uso correto de '[Phrase 1]' e pela clareza ao expressar '[Phrase 2]'."; in English: "Your speech flowed very naturally, especially when you accurately used '[Phrase 1]' and clearly expressed '[Phrase 2]'.").
      * Strict Prohibition: You are strictly forbidden from mentioning dependence, hesitation, lack of autonomy, or reliance on teacher support. Always celebrate these two specific verbalized achievements.
-   - Sentence 3 (Target Reinforcement - 2 Focus Points): Points the student forward by highlighting exactly two grammatical or structural patterns that need ongoing attention (which MUST match items in the Focus Areas below). Always provide at least two concrete, short examples in parentheses (e.g. "como em 'I am ready' e 'in the cup'").
+   - Sentence 3 (Target Reinforcement - 2 Focus Points): Points the student forward by highlighting exactly two grammatical or structural patterns that need ongoing attention (which MUST match items in the Focus Areas below). Always provide at least two concrete, short examples in parentheses:
+     * In Portuguese (Tier 1): (e.g. "como em 'I am ready' e 'in the cup'").
+     * In English (Tiers 2 to 4): (e.g. "such as 'I am ready' and 'in the cup'"). STRICT PROHIBITION: Never insert Portuguese words (like "como em" or "e") inside English level descriptions.
    - Sentence 4 (Bridge to Focus Areas): Concludes with a practical, welcoming bridge that directs the student directly to review the Focus Areas right below (e.g. in Portuguese: "Para dar o próximo passo com tranquilidade, dê uma olhada agora nos 5 pontos mais importantes que separamos logo abaixo da nossa aula."; in English: "To take your next step with confidence, check out the 5 key focus areas we selected right below from our class.").
    - Strict Prohibitions: Do NOT mention CEFR codes (A1, B1, etc.) anywhere in this text. No exclamation marks (!). No patronizing or deficit-based vocabulary.
 
@@ -1671,7 +1678,13 @@ O **QuizHub** é um Progressive Web App (PWA) de **gestão pedagógica, acompanh
 Esta seção documenta as dependências que residem fora do repositório local e que o código-fonte por si só não explica completamente:
 
 ### A. Banco de Dados Relacional (Supabase BaaS)
-- **Instância:** `[https://xttzilpuuqjbztjkeadd.supabase.co](https://xttzilpuuqjbztjkeadd.supabase.co)`
+- **Instância:** `https://xttzilpuuqjbztjkeadd.supabase.co`
+- **Autenticação & Controle de Acesso:**
+  - **Sessão Docente:** Proteção exclusiva das rotas docentes com o componente `TeacherGuard.tsx`. Sessão criptografada persistida no `localStorage` do navegador para evitar logins repetitivos.
+  - **Acesso Público sem Fricção aos Alunos:** Rotas de alunos (`/:studentId` e `/quiz/:sessionId`) são externas ao guardião e não exigem login.
+  - **Políticas de Row Level Security (RLS):**
+    - Tabelas Privadas (`dossiers`, `teacher_briefings`): Acesso estritamente restrito a conexões com sessão de professor (`auth.role() = 'authenticated'`).
+    - Tabelas Compartilhadas (`students`, `class_sessions`, `student_quizzes`): Leitura pública liberada (`SELECT` para `anon` e `authenticated`), garantindo que os alunos consigam carregar e responder seus quizzes sem autenticação. Gravação, edição e exclusão restritas ao professor (`authenticated`) e à chave mestre `service_role`.
 - **Schema e Tabelas:**
   - `students`: Cadastro de alunos por slug normalizado (`id`) e nome completo em Title Case estrito (`name`).
   - `class_sessions`: Registro de cada aula associada ao aluno, contendo data formatada (`class_date`), horário de início truncado (`class_time`), flag de auditoria/imutabilidade (`is_verified`) e carimbo de criação (`created_at`).
@@ -1682,7 +1695,7 @@ Esta seção documenta as dependências que residem fora do repositório local e
 
 ### B. Backend Serverless e Motor de IA (Google Apps Script Web App)
 - **Endpoint Web App (`Code.gs`):**
-  `[https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec](https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec)`
+  `https://script.google.com/macros/s/AKfycbwYMojtkvPqteY6ZNvnmqqqxA8gmKvsoC7HLyHWAQvjqkOawTq9X4kcFKilHmdhu9c/exec`
 - **Blindagem e Governança:** O arquivo `Code.gs` roda na nuvem do Google e é mantido no `.gitignore` para proteção contra vazamento de credenciais GCP e Supabase. Toda e qualquer alteração no código do Apps Script exige a publicação de uma **Nova versão** em *Gerenciar implantações* para ter efeito no Web App.
 - **Rotas do Endpoint (`doGet`):**
   1. `action=processBrainDump`: Processa semanticamente notas do professor para atualizar os cards do dossiê ou executar comandos de fusão de perfis e registro de aliases (`- Meet Aliases:`).
@@ -1758,7 +1771,6 @@ echo "Concluído! Arquivo $OUTPUT pronto para leitura."
 2. Caso identifique divergências, fornecer explicitamente ao usuário a versão revisada e atualizada do `QUIZHUB_MASTER.md`.
 3. Instruir o usuário a gerar uma nova versão do `QUIZHUB_DUMPER.md` caso arquivos tenham sido criados, movidos ou excluídos.
 
-
 ### 📄 ARQUIVO: ./README.md
 # React + TypeScript + Vite
 
@@ -1801,23 +1813,213 @@ import QuizView from './pages/QuizView';
 import TeacherHub from './pages/TeacherHub';
 import BriefingView from './pages/BriefingView';
 import DossierView from './pages/DossierView';
+import TeacherGuard from './components/TeacherGuard';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/teacher" replace />} />
+
+        {/* Rotas Públicas dos Alunos (Acesso Livre sem Login) */}
         <Route path="/:studentId" element={<StudentHub />} />
         <Route path="/quiz/:sessionId" element={<QuizView />} />
-        <Route path="/teacher/quiz/:sessionId" element={<QuizView />} />
-        <Route path="/teacher" element={<TeacherHub />} />
-        <Route path="/teacher/:studentId" element={<TeacherHub />} />
-        <Route path="/teacher/briefing/:sessionId" element={<BriefingView />} />
-        <Route path="/teacher/dossier/:studentId" element={<DossierView />} />
+
+        {/* Rotas Docentes Protegidas por Autenticação */}
+        <Route element={<TeacherGuard />}>
+          <Route path="/teacher" element={<TeacherHub />} />
+          <Route path="/teacher/:studentId" element={<TeacherHub />} />
+          <Route path="/teacher/quiz/:sessionId" element={<QuizView />} />
+          <Route path="/teacher/briefing/:sessionId" element={<BriefingView />} />
+          <Route path="/teacher/dossier/:studentId" element={<DossierView />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
 }
+
+
+### 📄 ARQUIVO: ./src/components/TeacherGuard.tsx
+import { useState, useEffect, type FormEvent } from 'react';
+import { Outlet } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import type { Session } from '@supabase/supabase-js';
+
+export default function TeacherGuard() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+
+    setSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setErrorMsg('E-mail ou senha incorretos.');
+        } else {
+          setErrorMsg(error.message || 'Falha ao autenticar.');
+        }
+      }
+    } catch {
+      setErrorMsg('Erro de conexão ao autenticar.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: 40, textAlign: 'center', color: '#27427f', fontWeight: 'bold' }}>
+        Carregando painel docente...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div style={{ backgroundColor: '#acc1d8', minHeight: '100vh', padding: '24px 16px 48px', color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: 420, width: '100%' }}>
+          <div
+            style={{
+              backgroundColor: '#27427f',
+              borderRadius: 18,
+              padding: '16px 20px',
+              textAlign: 'center',
+              marginBottom: 16,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}
+          >
+            <div style={{ color: '#71c499', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              QUIZHUB • TEACHER ACCESS
+            </div>
+            <div style={{ color: '#eaeffa', fontSize: '0.85rem', fontWeight: 600, marginTop: 4 }}>
+              Acesso exclusivo do professor
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 10,
+              padding: '24px 20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              borderBottom: '4px solid #27427f'
+            }}
+          >
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#27427f', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  E-mail:
+                </label>
+                <input
+                  type="email"
+                  autoFocus
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.92rem',
+                    color: '#1e293b',
+                    backgroundColor: '#eaeffa',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#27427f', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Senha:
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.92rem',
+                    color: '#1e293b',
+                    backgroundColor: '#eaeffa',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              {errorMsg && (
+                <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', padding: '8px 12px', borderRadius: 6, fontSize: '0.82rem', fontWeight: 700, textAlign: 'center' }}>
+                  {errorMsg}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting || !email.trim() || !password.trim()}
+                style={{
+                  backgroundColor: '#27427f',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '11px 20px',
+                  borderRadius: 8,
+                  fontSize: '0.88rem',
+                  fontWeight: 800,
+                  cursor: (submitting || !email.trim() || !password.trim()) ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  marginTop: 6
+                }}
+              >
+                {submitting ? 'Entrando...' : 'Entrar no Painel'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <Outlet />;
+}
+
 
 ### 📄 ARQUIVO: ./src/index.css
 * {
